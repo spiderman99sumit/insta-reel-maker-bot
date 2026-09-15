@@ -62,6 +62,7 @@ logging.basicConfig(
     level=logging.INFO,
     handlers=[
         logging.StreamHandler(sys.stdout),
+        logging.FileHandler("bot.log", encoding="utf-8"),
     ],
 )
 logger = logging.getLogger("reel_bot")
