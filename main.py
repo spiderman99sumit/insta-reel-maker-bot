@@ -161,8 +161,40 @@ async def setup_bot() -> Application:
     return app
 
 
+def start_health_server() -> None:
+    """Run lightweight HTTP healthcheck server for cloud hosting (Render, Koyeb, Railway)."""
+    import os
+    import threading
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+
+    port_str = os.environ.get("PORT")
+    if not port_str:
+        return
+
+    port = int(port_str)
+
+    class HealthHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Telegram Reel Maker Bot is running!")
+
+        def log_message(self, format, *args):
+            pass
+
+    try:
+        server = HTTPServer(("0.0.0.0", port), HealthHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        logger.info(f"Healthcheck server listening on port {port}")
+    except Exception as e:
+        logger.warning(f"Could not start healthcheck server on port {port}: {e}")
+
+
 def main() -> None:
     """Run bot polling."""
+    start_health_server()
     # Run setup asynchronously
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

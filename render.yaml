@@ -1,0 +1,21 @@
+﻿services:
+  - type: web
+    name: insta-reel-maker-bot
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8963056930:AAFgtXdrKY3Y4tEkgC4_ecJgefs82fd8tRI
+      - key: INSTAGRAM_ACCOUNT_ID
+        value: "17841432884732151"
+      - key: OPENAI_API_KEY
+        value: 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
+      - key: GEMINI_API_KEY
+        value: AQ.Ab8RN6IHFt6EEY2ZoRb0Rm5v6rS9J-TnOmf-pD2-Emxvj_vpSA
+      - key: OUTPUT_DURATION_SECONDS
+        value: "15"
+      - key: MAX_VIDEO_SIZE_MB
+        value: "100"
