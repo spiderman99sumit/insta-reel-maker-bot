@@ -2,15 +2,21 @@
 
 import asyncio
 import logging
+import os
 import random
 import shutil
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from bot.handlers.commands import restricted
-from bot.services.ai_image_engine import generate_ai_visual
+from bot.services.ai_image_engine import (
+    generate_ai_visual,
+    generate_ai_candid_image,
+    fetch_pinterest_candid_image,
+)
 from bot.services.caption_generator import generate_instagram_caption
 from bot.services.instagram_service import instagram_service
 from bot.services.music_service import music_service
@@ -43,7 +49,7 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "id": "cinematic",
         "title": "Late Night / Cinematic",
         "icon": "🎬",
-        "desc": "Midnight drive, neon bokeh & deep emotional late night thoughts",
+        "desc": "Moody streetlights, car drives, city bokeh & deep thoughts",
         "style": "cinematic",
     },
     "traditional": {
@@ -55,7 +61,7 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# 11 Curated Authentic Candid Reference Aesthetics (100% real photo aesthetic, zero CGI)
+# 30 Curated Authentic Candid Reference Aesthetics (100% real photo aesthetic, zero CGI)
 ALL_IMAGE_OPTIONS: List[Dict[str, Any]] = [
     {
         "id": "sheer_saree",
@@ -185,6 +191,118 @@ ALL_IMAGE_OPTIONS: List[Dict[str, Any]] = [
         "desc": "Midnight city lights black evening dress candid",
         "categories": ["cinematic", "sexy", "romantic"],
     },
+    {
+        "id": "candid_black_saree_mirror",
+        "title": "Black Saree Mirror",
+        "filename": "candid_black_saree_mirror.jpg",
+        "icon": "🖤",
+        "desc": "Moody black chiffon saree with ornate earrings",
+        "categories": ["sexy", "romantic", "traditional"],
+    },
+    {
+        "id": "candid_wine_saree_balcony",
+        "title": "Wine Chiffon Balcony",
+        "filename": "candid_wine_saree_balcony.jpg",
+        "icon": "🍷",
+        "desc": "Deep wine red saree overlooking twinkling evening skyline",
+        "categories": ["sexy", "romantic", "cinematic"],
+    },
+    {
+        "id": "candid_cozy_sweater_coffee",
+        "title": "Cozy Knit Coffee Candid",
+        "filename": "candid_cozy_sweater_coffee.jpg",
+        "icon": "☕",
+        "desc": "Oversized warm knit sweater holding ceramic coffee mug",
+        "categories": ["romantic", "cinematic"],
+    },
+    {
+        "id": "candid_golden_hour_saree",
+        "title": "Golden Hour Organza Saree",
+        "filename": "candid_golden_hour_saree.jpg",
+        "icon": "🌅",
+        "desc": "Warm mustard & marigold sheer saree in setting sunbeams",
+        "categories": ["romantic", "traditional"],
+    },
+    {
+        "id": "candid_neon_car_passenger",
+        "title": "Midnight Neon Car Drive",
+        "filename": "candid_neon_car_passenger.jpg",
+        "icon": "🚗",
+        "desc": "Passenger seat candid with reflections of city neon lights",
+        "categories": ["cinematic", "romantic"],
+    },
+    {
+        "id": "candid_rooftop_midnight_lights",
+        "title": "Rooftop City Lights",
+        "filename": "candid_rooftop_midnight_lights.jpg",
+        "icon": "🌃",
+        "desc": "Midnight rooftop silhouette overlooking illuminated skyline",
+        "categories": ["cinematic", "sexy", "romantic"],
+    },
+    {
+        "id": "candid_temple_silk_saree",
+        "title": "Kanjeevaram Temple Saree",
+        "filename": "candid_temple_silk_saree.jpg",
+        "icon": "🛕",
+        "desc": "Deep crimson Kanjeevaram silk saree with rich antique gold zari",
+        "categories": ["traditional", "romantic"],
+    },
+    {
+        "id": "candid_banarasi_diya_courtyard",
+        "title": "Banarasi Diya Courtyard",
+        "filename": "candid_banarasi_diya_courtyard.jpg",
+        "icon": "🪔",
+        "desc": "Royal emerald Banarasi silk by flickering brass oil lamps",
+        "categories": ["traditional", "romantic", "cinematic"],
+    },
+    {
+        "id": "pin_saree_portrait_1",
+        "title": "Vintage Silk Portrait",
+        "filename": "pin_saree_portrait_1.jpg",
+        "icon": "👑",
+        "desc": "Vintage portrait in handcrafted silk saree with delicate pallu",
+        "categories": ["traditional", "cinematic", "romantic"],
+    },
+    {
+        "id": "pin_saree_portrait_2",
+        "title": "Golden Zari Candid",
+        "filename": "pin_saree_portrait_2.jpg",
+        "icon": "✨",
+        "desc": "Warm sunlit portrait with shimmering golden zari borders",
+        "categories": ["traditional", "romantic"],
+    },
+    {
+        "id": "pin_desi_candid_3",
+        "title": "Desi Courtyard Sunlight",
+        "filename": "pin_desi_candid_3.jpg",
+        "icon": "🌞",
+        "desc": "Natural candid sunlit courtyard moment with traditional jhumkas",
+        "categories": ["traditional", "romantic"],
+    },
+    {
+        "id": "pin_aesthetic_bedroom_4",
+        "title": "Fairylight Bedroom Candid",
+        "filename": "pin_aesthetic_bedroom_4.jpg",
+        "icon": "💫",
+        "desc": "Warm bedroom ambient bokeh with delicate string fairylights",
+        "categories": ["sexy", "romantic", "cinematic"],
+    },
+    {
+        "id": "pin_saree_candid_5",
+        "title": "Emerald Chiffon Mirror",
+        "filename": "pin_saree_candid_5.jpg",
+        "icon": "💚",
+        "desc": "Forest green chiffon saree mirror selfie with natural waves",
+        "categories": ["sexy", "traditional", "romantic"],
+    },
+    {
+        "id": "pin_saree_candid_6",
+        "title": "Ruby Velvet Evening Saree",
+        "filename": "pin_saree_candid_6.jpg",
+        "icon": "🌹",
+        "desc": "Rich ruby velvet evening saree with modern sleeveless blouse",
+        "categories": ["sexy", "romantic", "cinematic"],
+    },
 ]
 
 # 30 Curated Viral Lyrical Hindi/Hinglish Hooks & Quotes categorized
@@ -223,7 +341,7 @@ ALL_HOOK_OPTIONS: List[Dict[str, Any]] = [
 
 
 def get_image_option(img_id: str) -> Dict[str, Any]:
-    """Retrieve image option dictionary by ID or random fallback."""
+    """Retrieve image option dictionary by ID, custom upload, or dynamic slot."""
     if img_id == "custom_upload":
         return {
             "id": "custom_upload",
@@ -231,6 +349,27 @@ def get_image_option(img_id: str) -> Dict[str, Any]:
             "filename": "custom_upload.jpg",
             "icon": "📸",
             "desc": "User-provided custom image from ChatGPT/Gemini/Gallery",
+            "categories": ["sexy", "romantic", "cinematic", "traditional"],
+        }
+    if img_id.startswith("dyn_") or img_id.startswith("ai_gen_"):
+        return {
+            "id": img_id,
+            "title": "✨ Dynamic AI Candid Photo",
+            "filename": f"{img_id}.jpg",
+            "icon": "✨",
+            "desc": "Dynamic AI visual generated uniquely for you",
+            "categories": ["sexy", "romantic", "cinematic", "traditional"],
+        }
+    if img_id.startswith("pin_"):
+        for opt in ALL_IMAGE_OPTIONS:
+            if opt["id"] == img_id:
+                return opt
+        return {
+            "id": img_id,
+            "title": "📌 Pinterest Candid Photo",
+            "filename": f"{img_id}.jpg",
+            "icon": "📌",
+            "desc": "Fresh candid visual from Pinterest CDN",
             "categories": ["sexy", "romantic", "cinematic", "traditional"],
         }
     for opt in ALL_IMAGE_OPTIONS:
@@ -251,23 +390,44 @@ async def get_fresh_image_options(
     category: Optional[str] = None,
     limit: int = 5,
 ) -> List[Dict[str, Any]]:
-    """Return 5 unused candid images for this user filtered by category."""
+    """Return 5 unused candid images for this user filtered by category, guaranteed zero repeats."""
     used = await db_manager.get_used_assets(chat_id, "image")
     cat = category.lower().strip() if category else None
     if cat:
-        cat_pool = [opt for opt in ALL_IMAGE_OPTIONS if cat in opt.get("categories", [])]
-        pool = cat_pool if cat_pool else ALL_IMAGE_OPTIONS
+        pool = [opt for opt in ALL_IMAGE_OPTIONS if cat in opt.get("categories", [])]
+        if not pool:
+            pool = ALL_IMAGE_OPTIONS
     else:
         pool = ALL_IMAGE_OPTIONS
 
+    # 1. Unused candidates from requested category
     candidates = [opt for opt in pool if opt["id"] not in used]
-    if not candidates:
-        candidates = list(pool)
-    elif len(candidates) < limit:
+
+    # 2. If fewer than limit, borrow unused images from other categories
+    if len(candidates) < limit:
+        other_unseen = [opt for opt in ALL_IMAGE_OPTIONS if opt["id"] not in used and opt not in candidates]
+        random.shuffle(other_unseen)
         needed = limit - len(candidates)
-        used_ones = [opt for opt in pool if opt["id"] in used]
-        random.shuffle(used_ones)
-        candidates = list(candidates) + used_ones[:needed]
+        for opt in other_unseen[:needed]:
+            adapted = dict(opt)
+            if cat and cat not in adapted.get("categories", []):
+                adapted["categories"] = list(adapted.get("categories", [])) + [cat]
+            candidates.append(adapted)
+
+    # 3. ZERO-REPEAT GUARANTEE:
+    # If the user has used every single catalog image, generate brand new dynamic slots on the fly!
+    # NEVER EVER recycle used images back into candidates!
+    while len(candidates) < limit:
+        dyn_idx = len(candidates) + 1
+        unique_dyn_id = f"dyn_ai_{cat or 'vibe'}_{int(time.time())}_{random.randint(1000, 9999)}"
+        candidates.append({
+            "id": unique_dyn_id,
+            "title": f"Fresh AI Candid #{dyn_idx}",
+            "filename": f"{unique_dyn_id}.jpg",
+            "icon": "✨",
+            "desc": "100% brand new dynamic AI visual generation",
+            "categories": [cat] if cat else ["sexy", "romantic", "cinematic", "traditional"],
+        })
 
     random.shuffle(candidates)
     return candidates[:limit]
@@ -298,13 +458,18 @@ async def get_fresh_hook_options(
         pool = ALL_HOOK_OPTIONS
 
     candidates = [h for h in pool if h["text"] not in used]
+    if len(candidates) < limit:
+        other_unseen = [h for h in ALL_HOOK_OPTIONS if h["text"] not in used and h not in candidates]
+        random.shuffle(other_unseen)
+        needed = limit - len(candidates)
+        for h in other_unseen[:needed]:
+            adapted = dict(h)
+            if cat and cat not in adapted.get("categories", []):
+                adapted["categories"] = list(adapted.get("categories", [])) + [cat]
+            candidates.append(adapted)
+
     if not candidates:
         candidates = list(pool)
-    elif len(candidates) < limit:
-        needed = limit - len(candidates)
-        used_ones = [h for h in pool if h["text"] in used]
-        random.shuffle(used_ones)
-        candidates = list(candidates) + used_ones[:needed]
 
     random.shuffle(candidates)
     return candidates[:limit]
@@ -325,7 +490,7 @@ def build_category_selection_keyboard() -> InlineKeyboardMarkup:
 
 
 def build_image_selection_keyboard(options: List[Dict[str, Any]], category: Optional[str] = None) -> InlineKeyboardMarkup:
-    """Step 1/3: 5 Image options + Send Own Photo + Shuffle + Random + Back."""
+    """Step 1/3: 5 Image options + AI Generate + Pinterest + Own Photo + Shuffle + Random + Reset + Back."""
     keyboard = []
     row = []
     for idx, opt in enumerate(options, start=1):
@@ -336,17 +501,27 @@ def build_image_selection_keyboard(options: List[Dict[str, Any]], category: Opti
             row = []
     if row:
         keyboard.append(row)
+
+    # Dynamic AI & Pinterest generation buttons
+    keyboard.append([
+        InlineKeyboardButton("✨ Generate New AI Photo", callback_data="gen_ai_photo"),
+        InlineKeyboardButton("📌 Fetch Pinterest Photo", callback_data="fetch_pin_photo"),
+    ])
+
     # Upload Own Image row
     keyboard.append([
         InlineKeyboardButton("📸 Send / Upload My Own Photo", callback_data="upload_own_img"),
     ])
+
     # Utility row: Shuffle & Random
     keyboard.append([
         InlineKeyboardButton("🔄 Shuffle / Other 5", callback_data="shuffle_imgs"),
         InlineKeyboardButton("🎲 Random Visual", callback_data="pick_img_random"),
     ])
-    # Back button
+
+    # Reset History & Back button
     keyboard.append([
+        InlineKeyboardButton("🗑️ Reset History", callback_data="reset_my_history"),
         InlineKeyboardButton("⬅️ Change Category", callback_data="back_to_cats"),
     ])
     return InlineKeyboardMarkup(keyboard)
@@ -483,7 +658,13 @@ async def send_visual_text_preview(
             candid_src = Path(ctx_p)
 
     if not candid_src or not candid_src.exists():
-        candid_src = Path("assets/images/candid") / img_opt["filename"]
+        direct_p = Path("assets/images/candid") / img_opt.get("filename", "")
+        if direct_p.exists():
+            candid_src = direct_p
+        elif img_id.startswith("pin_"):
+            candid_src, _, _ = await asyncio.to_thread(fetch_pinterest_candid_image, category=cat_id, chat_id=chat_id)
+        else:
+            candid_src, _, _ = await asyncio.to_thread(generate_ai_candid_image, category=cat_id, chat_id=chat_id)
 
     timestamp = int(asyncio.get_event_loop().time())
     preview_path = config.temp_dir / f"{chat_id}_preview_{timestamp}.jpg"
@@ -632,7 +813,13 @@ async def render_custom_selected_reel(
             candid_src = Path(ctx_p)
 
     if not candid_src or not candid_src.exists():
-        candid_src = Path("assets/images/candid") / img_opt["filename"]
+        direct_p = Path("assets/images/candid") / img_opt.get("filename", "")
+        if direct_p.exists():
+            candid_src = direct_p
+        elif img_id.startswith("pin_"):
+            candid_src, _, _ = await asyncio.to_thread(fetch_pinterest_candid_image, category=cat, chat_id=chat_id)
+        else:
+            candid_src, _, _ = await asyncio.to_thread(generate_ai_candid_image, category=cat, chat_id=chat_id)
 
     timestamp = int(asyncio.get_event_loop().time())
     deployed_img = config.input_dir / f"{chat_id}_custom_{timestamp}.jpg"
@@ -842,6 +1029,104 @@ async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
         await query.message.reply_text(msg, parse_mode="Markdown")
 
     # -------------------------------------------------------------
+    # Dynamic AI Photo Generation Button
+    # -------------------------------------------------------------
+    elif data == "gen_ai_photo":
+        cat_id = context.user_data.get("chosen_cat", "sexy")
+        cat_info = get_category_info(cat_id)
+        await query.edit_message_text(
+            f"✨ *Generating a brand new AI candid photo for {cat_info['title']}...*\n"
+            "_(Checking OpenAI / Gemini / Dynamic film synthesis - zero repeats)_",
+            parse_mode="Markdown",
+        )
+        out_file, unique_id, title = await asyncio.to_thread(
+            generate_ai_candid_image,
+            category=cat_id,
+            chat_id=chat_id,
+        )
+        context.user_data["custom_media_path"] = str(out_file)
+        context.user_data["chosen_img"] = unique_id
+        await db_manager.record_used_asset(chat_id, "image", unique_id)
+
+        fresh_hooks = await get_fresh_hook_options(chat_id, category=cat_id, limit=5)
+        context.user_data["current_hook_options"] = fresh_hooks
+        hooks_text = "\n".join([f"{idx}️⃣ _{h['text']}_" for idx, h in enumerate(fresh_hooks, start=1)])
+
+        msg = (
+            f"📝 *Step 2 of 3: Choose Reel Text / Hook*\n\n"
+            f"📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
+            f"📸 *Visual:* {title}\n\n"
+            f"Select 1 of 5 viral quotes below, or type your own:\n\n"
+            f"{hooks_text}\n\n"
+            f"_(💡 Next, an instant visual preview with this AI visual will be created!)_"
+        )
+        await query.message.reply_text(
+            msg,
+            reply_markup=build_hook_selection_keyboard(fresh_hooks, category=cat_id),
+            parse_mode="Markdown",
+        )
+
+    # -------------------------------------------------------------
+    # Fetch Pinterest Photo Button
+    # -------------------------------------------------------------
+    elif data == "fetch_pin_photo":
+        cat_id = context.user_data.get("chosen_cat", "sexy")
+        cat_info = get_category_info(cat_id)
+        await query.edit_message_text(
+            f"📌 *Fetching fresh vertical candid photo from Pinterest CDN...*\n"
+            f"_(Category: {cat_info['title']} - zero repetition guarantee)_",
+            parse_mode="Markdown",
+        )
+        out_file, unique_id, title = await asyncio.to_thread(
+            fetch_pinterest_candid_image,
+            category=cat_id,
+            chat_id=chat_id,
+        )
+        context.user_data["custom_media_path"] = str(out_file)
+        context.user_data["chosen_img"] = unique_id
+        await db_manager.record_used_asset(chat_id, "image", unique_id)
+
+        fresh_hooks = await get_fresh_hook_options(chat_id, category=cat_id, limit=5)
+        context.user_data["current_hook_options"] = fresh_hooks
+        hooks_text = "\n".join([f"{idx}️⃣ _{h['text']}_" for idx, h in enumerate(fresh_hooks, start=1)])
+
+        msg = (
+            f"📝 *Step 2 of 3: Choose Reel Text / Hook*\n\n"
+            f"📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
+            f"📸 *Visual:* {title}\n\n"
+            f"Select 1 of 5 viral quotes below, or type your own:\n\n"
+            f"{hooks_text}\n\n"
+            f"_(💡 Next, an instant visual preview with this Pinterest photo will be created!)_"
+        )
+        await query.message.reply_text(
+            msg,
+            reply_markup=build_hook_selection_keyboard(fresh_hooks, category=cat_id),
+            parse_mode="Markdown",
+        )
+
+    # -------------------------------------------------------------
+    # Reset History Button
+    # -------------------------------------------------------------
+    elif data == "reset_my_history":
+        await db_manager.clear_used_assets(chat_id, "image")
+        cat_id = context.user_data.get("chosen_cat", "sexy")
+        cat_info = get_category_info(cat_id)
+        fresh_images = await get_fresh_image_options(chat_id, category=cat_id, limit=5)
+        context.user_data["current_img_options"] = fresh_images
+
+        msg = (
+            f"🔄 *Image History Cleared!*\n\n"
+            f"All 30+ candid aesthetics and dynamic slots are unlocked again.\n\n"
+            f"📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
+            f"Select 1 of 5 fresh options below:"
+        )
+        await query.edit_message_text(
+            msg,
+            reply_markup=build_image_selection_keyboard(fresh_images, category=cat_id),
+            parse_mode="Markdown",
+        )
+
+    # -------------------------------------------------------------
     # Step 1 -> Step 2: User chose Image -> Show Text Hooks for Category
     # -------------------------------------------------------------
     elif data.startswith("pick_img_"):
@@ -1042,3 +1327,88 @@ async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
             reply_markup=build_image_selection_keyboard(fresh_images, category=cat_id),
             parse_mode="Markdown",
         )
+
+
+@restricted
+async def set_gemini_key_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Set or update Google Gemini API key dynamically."""
+    message = update.effective_message
+    if not message:
+        return
+    args = context.args or []
+    if not args:
+        await message.reply_text(
+            "🔑 *Usage:* `/set_gemini_key YOUR_GEMINI_API_KEY`\n\n"
+            "Get your key starting with `AIzaSy...` from Google AI Studio:\n"
+            "https://aistudio.google.com/app/apikey",
+            parse_mode="Markdown",
+        )
+        return
+
+    new_key = args[0].strip()
+    os.environ["GEMINI_API_KEY"] = new_key
+    try:
+        env_file = Path(".env")
+        if env_file.exists():
+            lines = env_file.read_text(encoding="utf-8").splitlines()
+            new_lines = []
+            found = False
+            for line in lines:
+                if line.startswith("GEMINI_API_KEY="):
+                    new_lines.append(f"GEMINI_API_KEY={new_key}")
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(f"GEMINI_API_KEY={new_key}")
+            env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"Could not write to .env: {e}")
+
+    await message.reply_text(
+        f"✅ *Google Gemini Key Saved!*\nKey prefix: `{new_key[:8]}...`\nBot will use Gemini Imagen 3 for dynamic AI candid photos!",
+        parse_mode="Markdown",
+    )
+
+
+@restricted
+async def set_openai_key_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Set or update OpenAI API key dynamically."""
+    message = update.effective_message
+    if not message:
+        return
+    args = context.args or []
+    if not args:
+        await message.reply_text(
+            "🔑 *Usage:* `/set_openai_key YOUR_OPENAI_API_KEY`\n\n"
+            "Get your key from OpenAI Platform:\n"
+            "https://platform.openai.com/api-keys",
+            parse_mode="Markdown",
+        )
+        return
+
+    new_key = args[0].strip()
+    os.environ["OPENAI_API_KEY"] = new_key
+    try:
+        env_file = Path(".env")
+        if env_file.exists():
+            lines = env_file.read_text(encoding="utf-8").splitlines()
+            new_lines = []
+            found = False
+            for line in lines:
+                if line.startswith("OPENAI_API_KEY="):
+                    new_lines.append(f"OPENAI_API_KEY={new_key}")
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(f"OPENAI_API_KEY={new_key}")
+            env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"Could not write to .env: {e}")
+
+    await message.reply_text(
+        f"✅ *OpenAI Key Saved!*\nKey prefix: `{new_key[:8]}...`\nBot will use DALL-E 3 for dynamic AI candid photos!",
+        parse_mode="Markdown",
+    )
+

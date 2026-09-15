@@ -34,7 +34,13 @@ from bot.handlers.templates import (
     skip_command,
 )
 from bot.handlers.text import handle_overlay_text
-from bot.handlers.auto import auto_command, handle_auto_callbacks, reset_history_command
+from bot.handlers.auto import (
+    auto_command,
+    handle_auto_callbacks,
+    reset_history_command,
+    set_gemini_key_command,
+    set_openai_key_command,
+)
 from bot.handlers.instagram_handler import (
     insta_login_command,
     insta_session_command,
@@ -131,6 +137,8 @@ async def setup_bot() -> Application:
     app.add_handler(CommandHandler("skip", skip_command))
     app.add_handler(CommandHandler("auto", auto_command))
     app.add_handler(CommandHandler("reset_history", reset_history_command))
+    app.add_handler(CommandHandler("set_gemini_key", set_gemini_key_command))
+    app.add_handler(CommandHandler("set_openai_key", set_openai_key_command))
 
     # Register Media & Content Handlers
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
@@ -141,7 +149,7 @@ async def setup_bot() -> Application:
 
     # Register Callback Query Handlers (Template selection & Autonomous)
     app.add_handler(CallbackQueryHandler(handle_template_selection, pattern=r"^tmpl_"))
-    app.add_handler(CallbackQueryHandler(handle_auto_callbacks, pattern=r"^(cat_|pick_|shuffle_|back_|auto_|reel_)"))
+    app.add_handler(CallbackQueryHandler(handle_auto_callbacks, pattern=r"^(cat_|pick_|shuffle_|back_|auto_|reel_|gen_|fetch_|reset_|upload_)"))
     app.add_handler(CallbackQueryHandler(handle_post_to_insta_callback, pattern=r"^post_insta"))
 
     # Register Instagram Commands
