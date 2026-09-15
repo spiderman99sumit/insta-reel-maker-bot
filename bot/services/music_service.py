@@ -313,52 +313,52 @@ class MusicService:
             display_title = title_hint.title() if title_hint else clean_q.title()
             return out_vocal, f"{display_title} (Vocal Chorus)"
 
-        logger.info(f"Running yt-dlp for target: {target}")
+        targets_to_try = [target]
+        if not is_url:
+            targets_to_try.append(f"scsearch1:{clean_q}")
 
-        cmd = [
-            "yt-dlp",
-            "--extractor-args", "youtube:player_client=android",
-            "--extract-audio",
-            "--audio-format", "mp3",
-            "--output", str(out_raw),
-            "--max-filesize", "25M",
-            "--no-playlist",
-            target,
-        ]
-
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        if res.returncode == 0 and out_raw.exists():
-            # Get video/song title
-            title_cmd = [
+        for current_target in targets_to_try:
+            logger.info(f"Running yt-dlp for target: {current_target}")
+            cmd = [
                 "yt-dlp",
-                "--extractor-args", "youtube:player_client=android",
-                "--get-title",
+                "--extract-audio",
+                "--audio-format", "mp3",
+                "--output", str(out_raw),
+                "--max-filesize", "25M",
                 "--no-playlist",
-                target,
             ]
-            t_res = subprocess.run(title_cmd, capture_output=True, text=True, timeout=15)
-            extracted_title = (
-                t_res.stdout.strip()
-                if t_res.returncode == 0 and t_res.stdout.strip()
-                else (title_hint.title() if title_hint else clean_q.title())
-            )
-            clean_display = extracted_title.split("|")[0].split("(")[0].strip() if "|" in extracted_title else extracted_title
+            if "ytsearch" in current_target or "youtube" in current_target:
+                cmd.extend(["--extractor-args", "youtube:player_client=android"])
+            cmd.append(current_target)
 
-            # Cut 16s high-energy chorus clip with FFmpeg (start at 30s)
-            trim_cmd = [
-                "ffmpeg", "-y",
-                "-ss", "00:00:30",
-                "-i", str(out_raw),
-                "-t", "16",
-                "-c", "copy",
-                str(out_vocal),
-            ]
-            subprocess.run(trim_cmd, capture_output=True, timeout=15)
-            if out_vocal.exists() and out_vocal.stat().st_size > 1000:
-                return out_vocal, f"{clean_display} (Vocal Chorus)"
-            return out_raw, f"{clean_display} (Vocal Chorus)"
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
+            if res.returncode == 0 and out_raw.exists() and out_raw.stat().st_size > 1000:
+                # Get video/song title
+                title_cmd = ["yt-dlp", "--get-title", "--no-playlist", current_target]
+                t_res = subprocess.run(title_cmd, capture_output=True, text=True, timeout=15)
+                extracted_title = (
+                    t_res.stdout.strip()
+                    if t_res.returncode == 0 and t_res.stdout.strip()
+                    else (title_hint.title() if title_hint else clean_q.title())
+                )
+                clean_display = extracted_title.split("|")[0].split("(")[0].strip() if "|" in extracted_title else extracted_title
 
-        logger.warning(f"yt-dlp download failed: {res.stderr[:200] if res.stderr else 'unknown'}")
+                # Cut 16s high-energy chorus clip with FFmpeg (start at 30s)
+                trim_cmd = [
+                    "ffmpeg", "-y",
+                    "-ss", "00:00:30",
+                    "-i", str(out_raw),
+                    "-t", "16",
+                    "-c", "copy",
+                    str(out_vocal),
+                ]
+                subprocess.run(trim_cmd, capture_output=True, timeout=15)
+                if out_vocal.exists() and out_vocal.stat().st_size > 1000:
+                    return out_vocal, f"{clean_display} (Vocal Chorus)"
+                return out_raw, f"{clean_display} (Vocal Chorus)"
+            else:
+                logger.warning(f"Target '{current_target}' failed ({res.returncode}): {res.stderr[:160] if res.stderr else 'no output'}")
+
         return None
 
     def get_available_tracks(self) -> List[Path]:
