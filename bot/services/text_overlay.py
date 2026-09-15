@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
 
 try:
