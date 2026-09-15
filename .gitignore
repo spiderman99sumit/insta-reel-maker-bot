@@ -1,0 +1,26 @@
+# Environment secrets
+.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Runtime data
+data/input/*
+!data/input/.gitkeep
+data/audio/*
+!data/audio/.gitkeep
+data/output/*
+!data/output/.gitkeep
+data/temp/*
+!data/temp/.gitkeep
+
+# SQLite database
+database/*.db
+database/*.db-journal
+
+# Logs
+*.log

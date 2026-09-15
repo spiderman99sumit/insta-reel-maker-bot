@@ -1,0 +1,60 @@
+"""Text overlay input handler."""
+
+import logging
+from telegram import Update
+from telegram.ext import ContextTypes
+
+from bot.handlers.commands import restricted
+from database.db import db_manager
+
+logger = logging.getLogger(__name__)
+
+
+@restricted
+async def handle_overlay_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Capture overlay text from user when in WAITING_TEXT step."""
+    chat_id = update.effective_chat.id
+    session = await db_manager.get_session(chat_id)
+
+    step = session.get("current_step") if session else None
+
+    if step in ("WAITING_AI_TEXT", "WAITING_CUSTOM_TEXT"):
+        text = update.effective_message.text.strip()
+        from bot.handlers.auto import complete_custom_reel_flow
+        await complete_custom_reel_flow(update, context, custom_text=text)
+        return
+
+    if step == "WAITING_SONG_NAME":
+        song_name = update.effective_message.text.strip()
+        from bot.handlers.auto import handle_song_name_input
+        await handle_song_name_input(update, context, song_name=song_name)
+        return
+
+    if not session or step != "WAITING_TEXT":
+        # Check if user sent a quick trigger command like 'image', 'video', 'sexy'
+        from bot.handlers.auto import handle_quick_text_triggers
+        handled = await handle_quick_text_triggers(update, context)
+        if not handled and update.effective_message:
+            await update.effective_message.reply_text(
+                "💡 *Quick Tip:*\n"
+                "• Send /reel to choose style and generate a new reel!\n"
+                "• Type `sexy`, `romantic`, or `reel` anytime to begin.",
+                parse_mode="Markdown",
+            )
+        return
+
+    text = update.effective_message.text
+    if not text or not text.strip():
+        await update.effective_message.reply_text("Please enter non-empty text for your reel.")
+        return
+
+    # Update database
+    await db_manager.update_session(
+        chat_id,
+        current_step="WAITING_MUSIC",
+        overlay_text=text.strip(),
+    )
+
+    # Required progress message
+    await update.effective_message.reply_text("Text received")
+    await update.effective_message.reply_text("Send an MP3/audio file or type /skip")
