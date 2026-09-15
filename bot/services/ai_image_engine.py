@@ -1,4 +1,4 @@
-﻿"""AI Visual Generator for 1080x1920 Vertical Reels."""
+"""AI Visual Generator for 1080x1920 Vertical Reels."""
 
 import logging
 import random
