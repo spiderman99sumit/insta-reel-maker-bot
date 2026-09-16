@@ -24,6 +24,7 @@ class TemplateStyle:
     scrim_padding: int = 36
     ken_burns: str = "zoom_in"  # "zoom_in", "zoom_out", "pan", "none"
     fade_seconds: float = 0.5
+    highlight_color: Tuple[int, int, int, int] = (255, 220, 50, 255)
 
 
 TEMPLATES = {

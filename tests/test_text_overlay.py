@@ -52,3 +52,28 @@ def test_long_text_font_adaptation(tmp_path: Path):
 
     res_path = create_text_overlay(long_text, template, out_png, config.font_path)
     assert res_path.exists()
+
+
+def test_word_highlighting_explicit_and_auto(tmp_path: Path):
+    """Verify word highlighting works for both explicit *marks* and auto-detected keywords."""
+    from bot.services.text_overlay import extract_highlight_targets
+
+    # 1. Explicit asterisks
+    text1 = "kuch log *dil* mein aise bas jaate hain"
+    clean1, hl1 = extract_highlight_targets(text1)
+    assert clean1 == "kuch log dil mein aise bas jaate hain"
+    assert "dil" in hl1
+
+    # 2. Auto-detection of emotional keywords
+    text2 = "kuch log dil mein aise bas jaate hain ki unke baad koi accha nahi lagta... 🥀"
+    clean2, hl2 = extract_highlight_targets(text2)
+    assert "dil" in hl2
+
+    # 3. Create actual overlay with highlights
+    out_png = tmp_path / "test_hl.png"
+    template = TEMPLATES["romantic"]
+    res = create_text_overlay(text2, template, out_png)
+    assert res.exists()
+    with Image.open(res) as img:
+        assert img.size == (1080, 1920)
+        assert img.mode == "RGBA"

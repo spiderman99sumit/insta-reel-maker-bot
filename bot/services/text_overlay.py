@@ -1,8 +1,9 @@
 """Pillow-based transparent PNG text overlay generator."""
 
 import logging
+import re
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 from PIL import Image, ImageDraw, ImageFont
 
 try:
@@ -28,6 +29,40 @@ SAFE_MARGIN_TOP = 220
 SAFE_MARGIN_BOTTOM = 320
 USABLE_WIDTH = CANVAS_WIDTH - (SAFE_MARGIN_X * 2)
 USABLE_HEIGHT = CANVAS_HEIGHT - SAFE_MARGIN_TOP - SAFE_MARGIN_BOTTOM
+
+# Core emotional and impact keywords for automatic aesthetic highlighting
+HIGHLIGHT_KEYWORDS: Set[str] = {
+    # Hindi / Urdu emotional keywords
+    "dil", "ishq", "pyar", "pyaar", "mohabbat", "rooh", "khwab", "khwaab", "nasha",
+    "nigahein", "aankhon", "aankhein", "haseen", "khoobsurat", "chaahat", "intezaar",
+    "judaai", "ehsaas", "kareeb", "saansein", "dhadkan", "sanam", "pagal", "jaan",
+    "zindagi", "khushi", "wafaa", "sukoon", "shiddat", "junoon", "ibaadat", "ibadat", "duaa",
+    "khuda", "deewana", "deewani", "muskurahat", "tasveer", "yaad", "yaadein",
+    "baatein", "lamha", "lamhe", "khamoshi", "raat", "chaand", "chand", "sitaron",
+    # English emotional keywords
+    "love", "forever", "vibe", "magic", "dream", "eyes", "heart", "soul", "queen",
+    "cutie", "sexy", "hot", "beautiful", "gorgeous", "special", "obsessed",
+}
+
+
+def extract_highlight_targets(raw_text: str) -> Tuple[str, Set[str]]:
+    """Extract explicit words in *asterisks* or detect key emotional keywords for accent highlighting."""
+    explicit_matches = set(m.lower() for m in re.findall(r"\*([^*]+)\*", raw_text))
+    clean_text = re.sub(r"\*([^*]+)\*", r"\1", raw_text)
+
+    if explicit_matches:
+        return clean_text, explicit_matches
+
+    # Auto-detect up to 2 emotional words if no explicit marks
+    auto_matches: Set[str] = set()
+    count = 0
+    words = re.findall(r"[a-zA-Z]+", clean_text)
+    for w in words:
+        if w.lower() in HIGHLIGHT_KEYWORDS and count < 2:
+            auto_matches.add(w.lower())
+            count += 1
+
+    return clean_text, auto_matches
 
 
 def load_font(font_path: Path, size: int) -> ImageFont.FreeTypeFont:
@@ -153,10 +188,13 @@ def create_text_overlay(
     if font_path is None:
         font_path = config.font_path
 
+    # Extract highlighted words (*asterisks* or auto-detected emotional keywords)
+    clean_text, target_highlights = extract_highlight_targets(text.strip())
+
     # Pre-process text according to template
-    clean_text = text.strip()
     if template.is_uppercase:
         clean_text = clean_text.upper()
+        target_highlights = set(h.upper() for h in target_highlights)
     if template.quote_marks and not (clean_text.startswith('"') or clean_text.startswith('“')):
         clean_text = f"“{clean_text}”"
 
@@ -207,52 +245,83 @@ def create_text_overlay(
             current_y += line_spacing + 20
             continue
 
-        bbox = draw.textbbox((0, 0), line, font=font)
-        line_w = bbox[2] - bbox[0]
-        line_h = bbox[3] - bbox[1]
-        line_x = (CANVAS_WIDTH - line_w) // 2
+        words = line.split(" ")
+        space_w = draw.textlength(" ", font=font)
+
+        # Measure each word width using Pilmoji if available
+        word_widths = []
+        for w in words:
+            try:
+                if HAS_PILMOJI:
+                    with Pilmoji(canvas) as p_draw:
+                        ww = p_draw.getsize(w, font=font)[0]
+                else:
+                    ww = draw.textlength(w, font=font)
+            except Exception:
+                ww = draw.textlength(w, font=font)
+            word_widths.append(ww)
+
+        line_w = sum(word_widths) + (space_w * max(0, len(words) - 1))
+        line_x = int((CANVAS_WIDTH - line_w) // 2)
 
         # 1. Drop shadow (render on text without duplicating full-color emoji icons)
         if template.shadow_color and template.shadow_offset != (0, 0):
             sx, sy = template.shadow_offset
-            shadow_text = emoji.replace_emoji(line, replace=" ") if (emoji and HAS_PILMOJI) else line
-            for dx, dy in [(sx, sy), (sx + 1, sy + 1)]:
-                draw.text(
-                    (line_x + dx, current_y + dy),
-                    shadow_text,
-                    font=font,
-                    fill=template.shadow_color,
-                )
+            shad_x = line_x
+            for w, ww in zip(words, word_widths):
+                shadow_text = emoji.replace_emoji(w, replace=" ") if (emoji and HAS_PILMOJI) else w
+                for dx, dy in [(sx, sy), (sx + 1, sy + 1)]:
+                    draw.text(
+                        (shad_x + dx, current_y + dy),
+                        shadow_text,
+                        font=font,
+                        fill=template.shadow_color,
+                    )
+                shad_x += ww + space_w
 
-        # 2. Main text with stroke outline and emoji support
+        # 2. Main text with stroke outline, emoji support, and highlight color
         rendered_with_pilmoji = False
         if HAS_PILMOJI:
             try:
                 with Pilmoji(canvas) as p_draw:
-                    p_draw.text(
-                        (line_x, current_y),
-                        line,
-                        font=font,
-                        fill=template.text_color,
-                        stroke_width=template.stroke_width,
-                        stroke_fill=template.stroke_color if template.stroke_color else (0, 0, 0, 0),
-                    )
+                    text_x = line_x
+                    for w, ww in zip(words, word_widths):
+                        clean_w = re.sub(r'^[^\w]+|[^\w]+$', '', w).lower()
+                        is_hl = (clean_w in target_highlights) or any(t == clean_w for t in target_highlights)
+                        w_color = template.highlight_color if is_hl else template.text_color
+                        p_draw.text(
+                            (text_x, current_y),
+                            w,
+                            font=font,
+                            fill=w_color,
+                            stroke_width=template.stroke_width,
+                            stroke_fill=template.stroke_color if template.stroke_color else (0, 0, 0, 0),
+                        )
+                        text_x += ww + space_w
                 rendered_with_pilmoji = True
             except Exception as e:
                 logger.warning(f"Pilmoji render failed for line '{line}': {e}")
 
         if not rendered_with_pilmoji:
             # Fallback: strip emojis to avoid missing-glyph cross boxes (⯐)
-            fallback_line = emoji.replace_emoji(line, replace="").strip() if emoji else line
-            draw.text(
-                (line_x, current_y),
-                fallback_line,
-                font=font,
-                fill=template.text_color,
-                stroke_width=template.stroke_width,
-                stroke_fill=template.stroke_color if template.stroke_color else (0, 0, 0, 0),
-            )
+            text_x = line_x
+            for w, ww in zip(words, word_widths):
+                clean_w = re.sub(r'^[^\w]+|[^\w]+$', '', w).lower()
+                is_hl = (clean_w in target_highlights) or any(t == clean_w for t in target_highlights)
+                w_color = template.highlight_color if is_hl else template.text_color
+                fallback_w = emoji.replace_emoji(w, replace="").strip() if emoji else w
+                draw.text(
+                    (text_x, current_y),
+                    fallback_w,
+                    font=font,
+                    fill=w_color,
+                    stroke_width=template.stroke_width,
+                    stroke_fill=template.stroke_color if template.stroke_color else (0, 0, 0, 0),
+                )
+                text_x += ww + space_w
 
+        bbox = draw.textbbox((0, 0), line, font=font)
+        line_h = bbox[3] - bbox[1]
         current_y += line_h + line_spacing
 
     # Save PNG
