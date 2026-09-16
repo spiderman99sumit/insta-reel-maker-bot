@@ -156,7 +156,7 @@ async def setup_bot() -> Application:
     app.add_handler(CallbackQueryHandler(handle_template_selection, pattern=r"^tmpl_"))
     app.add_handler(CallbackQueryHandler(handle_auto_callbacks, pattern=r"^(cat_|pick_|shuffle_|back_|auto_|reel_|gen_|fetch_|reset_|upload_|studio_)"))
     app.add_handler(CallbackQueryHandler(handle_post_to_insta_callback, pattern=r"^post_insta"))
-    app.add_handler(CallbackQueryHandler(handle_autopilot_callbacks, pattern=r"^(autopilot_|cancel_autopost_|post_now_)"))
+    app.add_handler(CallbackQueryHandler(handle_autopilot_callbacks, pattern=r"^(autopilot_|cancel_autopost_|post_now_|user_posting_)"))
 
     # Register Autopilot & Instagram Commands
     app.add_handler(CommandHandler(["autopilot", "schedule"], autopilot_command))

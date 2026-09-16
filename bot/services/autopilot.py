@@ -298,18 +298,22 @@ async def generate_and_deliver_scheduled_reel(
             f"🎤 *Audio (Lyrics Vocal):* {song_title}\n\n"
             f"📝 *Lyrics Quote:*\n"
             f"_{hook_text}_\n\n"
-            f"⏳ *Auto-Post Notice:*\n"
-            f"Agar aap 10 minute tak koi reply nahi karenge ya Cancel nahi dabayenge, toh theek *{target_time_str}* par ye reel automatically Instagram par post ho jayegi!"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👉 **AGAR AAP FREE HAIN:**\n"
+            f"Neeche *\"🙋‍♂️ Main Khud Post Kar Raha Hoon\"* dabayein ya chat me likhein. Bot is reel ko auto-post NAHI karega taaki duplicate na ho!\n\n"
+            f"👉 **AGAR AAP BUSY HAIN:**\n"
+            f"Kuch mat kijiye! Theek 10 min baad bot khud hi Instagram par live publish kar dega!\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
         )
 
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("🛑 Cancel Auto-Post", callback_data=f"cancel_autopost_{post_id}"),
-                InlineKeyboardButton("🚀 Post Now", callback_data=f"post_now_{post_id}"),
+                InlineKeyboardButton("🙋‍♂️ Main Khud Post Kar Raha Hoon", callback_data=f"user_posting_{post_id}"),
             ],
             [
-                InlineKeyboardButton("⚙️ AutoPilot Settings", callback_data="autopilot_status_view"),
-            ]
+                InlineKeyboardButton("🤖 Bot Post Kar De Abhi", callback_data=f"post_now_{post_id}"),
+                InlineKeyboardButton("🛑 Skip / Cancel", callback_data=f"cancel_autopost_{post_id}"),
+            ],
         ])
 
         with open(final_video_path, "rb") as vf:
@@ -463,7 +467,23 @@ async def handle_autopilot_callbacks(update: Update, context: ContextTypes.DEFAU
     chat_id = update.effective_chat.id
     data = query.data or ""
 
-    if data.startswith("cancel_autopost_"):
+    if data.startswith("user_posting_"):
+        post_id = data.replace("user_posting_", "")
+        item = PENDING_AUTO_POSTS.get(post_id)
+        if item:
+            item["status"] = "user_handled"
+            await query.edit_message_reply_markup(reply_markup=None)
+            await query.message.reply_text(
+                "🙋‍♂️ *Noted! Aap khud post kar rahe hain.*\n\n"
+                "• Bot is reel ko Instagram par auto-post **NAHI** karega.\n"
+                "• Aap video save karke Instagram app me manpasand song ke sath post kar lijiye.\n\n"
+                "✅ _Duplicate posting avoided! Dono taraf se post hone ka koi chance nahi hai._",
+                parse_mode="Markdown",
+            )
+        else:
+            await query.message.reply_text("✅ Noted! Bot duplicate post nahi karega.")
+
+    elif data.startswith("cancel_autopost_"):
         post_id = data.replace("cancel_autopost_", "")
         item = PENDING_AUTO_POSTS.get(post_id)
         if item:
