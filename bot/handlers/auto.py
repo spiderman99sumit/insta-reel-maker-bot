@@ -1620,6 +1620,8 @@ async def execute_studio_reel_render(
                 caption=caption,
                 supports_streaming=True,
                 parse_mode="Markdown",
+                write_timeout=180,
+                read_timeout=180,
             )
 
         await context.bot.send_message(

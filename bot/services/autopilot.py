@@ -322,6 +322,8 @@ async def generate_and_deliver_scheduled_reel(
                 reply_markup=keyboard,
                 supports_streaming=True,
                 parse_mode="Markdown",
+                write_timeout=180,
+                read_timeout=180,
             )
         logger.info(f"[AutoPilot] Delivered scheduled reel {post_id} to chat {chat_id}")
 
