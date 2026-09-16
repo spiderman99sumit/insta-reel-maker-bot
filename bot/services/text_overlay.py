@@ -39,9 +39,13 @@ HIGHLIGHT_KEYWORDS: Set[str] = {
     "zindagi", "khushi", "wafaa", "sukoon", "shiddat", "junoon", "ibaadat", "ibadat", "duaa",
     "khuda", "deewana", "deewani", "muskurahat", "tasveer", "yaad", "yaadein",
     "baatein", "lamha", "lamhe", "khamoshi", "raat", "chaand", "chand", "sitaron",
-    # English emotional keywords
-    "love", "forever", "vibe", "magic", "dream", "eyes", "heart", "soul", "queen",
+    "saadgi", "shringar", "dosti", "rishta", "darling",
+    # English emotional, hot baddie & bestie keywords
+    "love", "forever", "vibe", "magic", "dream", "eyes", "heart", "soul", "queen", "queens",
     "cutie", "sexy", "hot", "beautiful", "gorgeous", "special", "obsessed",
+    "bestie", "besties", "baddie", "savage", "attitude", "favorite", "drama", "unbreakable",
+    "unbothered", "champagne", "standard", "glam", "aesthetic", "goals", "chaos",
+    "prize", "crush", "storm", "friends", "friend", "sister", "unhinged",
 }
 
 

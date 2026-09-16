@@ -144,6 +144,23 @@ TEMPLATES = {
         ken_burns="zoom_in",
         fade_seconds=0.8,
     ),
+    "bestie": TemplateStyle(
+        key="bestie",
+        display_name="Bestie Love 👯‍♀️",
+        description="Vibrant bestie vibes, clean floating text, golden word highlight, zero background box",
+        base_font_size=68,
+        text_color=(255, 255, 255, 255),
+        stroke_color=(0, 0, 0, 180),
+        stroke_width=2,
+        shadow_color=(0, 0, 0, 220),
+        shadow_offset=(4, 5),
+        vertical_align="lower_center",
+        is_uppercase=False,
+        box_scrim=False,
+        ken_burns="zoom_in",
+        fade_seconds=0.7,
+        highlight_color=(255, 220, 50, 255),
+    ),
 }
 
 

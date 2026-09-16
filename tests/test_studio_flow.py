@@ -15,7 +15,7 @@ from database.db import db_manager, DatabaseManager
 async def test_get_random_category_image_all_categories():
     """Verify each category has hundreds of available images and can pick randomly."""
     chat_id = 123456789
-    for cat in ["sexy", "romantic", "cinematic", "traditional"]:
+    for cat in ["sexy", "bestie", "romantic", "cinematic", "traditional"]:
         img_path = get_random_category_image(cat, chat_id)
         assert img_path.exists(), f"Random image for {cat} must exist"
         assert img_path.is_file()
