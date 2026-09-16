@@ -70,8 +70,13 @@ def render_single_pass_image_reel(
         raise VideoEngineError("FFmpeg is not installed")
 
     total_frames = int(duration * fps)
+    fade_in_d = 0.8
     fade_out_st = max(0.0, duration - 1.5)
+    fade_out_d = 1.5
+    text_fade_in_st = 0.5
+    text_fade_in_d = 0.8
     text_fade_out_st = max(0.0, duration - 2.0)
+    text_fade_out_d = 1.2
 
     # Ken Burns motion expression
     if template.ken_burns == "zoom_in":
@@ -83,14 +88,15 @@ def render_single_pass_image_reel(
 
     has_audio = audio_path and audio_path.exists() and audio_path.stat().st_size > 1000
 
+    # Smooth Fade In from black at start, text alpha fade in/out, and smooth Fade Out to black at end
     filter_complex = (
-        f"[0:v]{zoom_expr},fade=t=out:st={fade_out_st}:d=1.5[bg];"
-        f"[1:v]format=rgba,fade=t=in:st=0.5:d=1.0:alpha=1,fade=t=out:st={text_fade_out_st}:d=1.5:alpha=1[txt];"
+        f"[0:v]{zoom_expr},fade=t=in:st=0:d={fade_in_d},fade=t=out:st={fade_out_st}:d={fade_out_d}[bg];"
+        f"[1:v]format=rgba,fade=t=in:st={text_fade_in_st}:d={text_fade_in_d}:alpha=1,fade=t=out:st={text_fade_out_st}:d={text_fade_out_d}:alpha=1[txt];"
         f"[bg][txt]overlay=0:0:format=auto,format=yuv420p[v]"
     )
 
     if has_audio:
-        filter_complex += f";[2:a]volume=0.85,afade=t=in:st=0:d=1.5,afade=t=out:st={fade_out_st}:d=2.0[a]"
+        filter_complex += f";[2:a]volume=0.85,afade=t=in:st=0:d=1.0,afade=t=out:st={fade_out_st}:d={fade_out_d}[a]"
 
     cmd = [
         "ffmpeg", "-y",
@@ -289,15 +295,17 @@ def render_final_video(
     duration: float,
     template: TemplateStyle,
 ) -> Path:
-    fade_in_d = 1.0
+    fade_in_d = 0.8
+    fade_out_st = max(0.0, duration - 1.5)
+    fade_out_d = 1.5
     text_fade_out_st = max(0.0, duration - 2.0)
-    video_fade_out_st = max(0.0, duration - 1.5)
 
-    # 1. Text alpha fade: fades in at 0.5s over 1.0s, stays, fades out at duration-2.0s over 1.5s
-    # 2. Video fade: fades out to black over the final 1.5 seconds
+    # 1. Text alpha fade: fades in at 0.5s over 0.8s, stays, fades out at duration-2.0s over 1.2s
+    # 2. Video fade: fades in from black at 0s over 0.8s, fades out to black over the final 1.5s
     filter_complex = (
-        f"[1:v]format=rgba,fade=t=in:st=0.5:d={fade_in_d}:alpha=1,fade=t=out:st={text_fade_out_st}:d=1.5:alpha=1[txt];"
-        f"[0:v][txt]overlay=0:0,fade=t=out:st={video_fade_out_st}:d=1.5[v]"
+        f"[1:v]format=rgba,fade=t=in:st=0.5:d=0.8:alpha=1,fade=t=out:st={text_fade_out_st}:d=1.2:alpha=1[txt];"
+        f"[0:v]fade=t=in:st=0:d={fade_in_d},fade=t=out:st={fade_out_st}:d={fade_out_d}[bg];"
+        f"[bg][txt]overlay=0:0[v]"
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
