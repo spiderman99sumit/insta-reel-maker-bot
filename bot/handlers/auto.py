@@ -1453,15 +1453,15 @@ def build_studio_preview_keyboard() -> InlineKeyboardMarkup:
     """Action buttons attached to the live 1080x1920 preview image."""
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("🎬 Render Reel (Final)", callback_data="studio_render")
+            InlineKeyboardButton("🎬 Render Reel", callback_data="studio_render")
         ],
         [
-            InlineKeyboardButton("⏭️ Skip (Next Photo)", callback_data="studio_skip"),
-            InlineKeyboardButton("🔄 New Shayari", callback_data="studio_new_text"),
+            InlineKeyboardButton("⏭️ Skip Photo", callback_data="studio_skip"),
+            InlineKeyboardButton("🔄 New Quote", callback_data="studio_new_text"),
         ],
         [
             InlineKeyboardButton("✏️ Custom Text", callback_data="studio_custom_text"),
-            InlineKeyboardButton("🔙 Change Category", callback_data="back_to_cats"),
+            InlineKeyboardButton("🔙 Categories", callback_data="back_to_cats"),
         ],
     ])
 
@@ -1519,13 +1519,13 @@ async def send_interactive_studio_preview(
     )
 
     caption = (
-        f"📸 *Live Reel Studio Preview*\n\n"
+        f"📸 *Live Reel Studio Preview (1080x1920)*\n\n"
         f"• 📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
         f"• 🖼️ *Image:* `{image_path.name}`\n"
         f"• ✍️ *Text:* \"_{chosen_text}_\"\n\n"
-        f"👉 *Pasand aaye toh \"🎬 Render Reel\" dabayein!*\n"
-        f"👉 *Nayi photo ke liye \"⏭️ Skip\" dabayein (ye photo waste nahi hogi).*\n"
-        f"👉 *Apna text likhne ke liye \"✏️ Custom Text\" dabayein.*"
+        f"👉 Tap **🎬 Render Reel** to finalize video.\n"
+        f"👉 Tap **⏭️ Skip Photo** to preview next image.\n"
+        f"👉 Tap **✏️ Custom Text** to enter your own lines."
     )
 
     with open(preview_path, "rb") as photo_f:
@@ -1624,7 +1624,7 @@ async def execute_studio_reel_render(
 
         await context.bot.send_message(
             chat_id=chat_id,
-            text="✨ *Agla Reel Banayein:* Category choose karein:",
+            text="✨ *Create Another Reel:* Select a category below:",
             reply_markup=build_category_selection_keyboard(),
             parse_mode="Markdown",
         )
@@ -1632,7 +1632,7 @@ async def execute_studio_reel_render(
         logger.error(f"Studio reel render failed: {e}", exc_info=True)
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"❌ *Render Error:* {e}\nKripya /auto dabakar dobara try karein.",
+            text=f"❌ *Render Error:* {e}\nPlease type /auto to try again.",
             parse_mode="Markdown",
         )
 
@@ -1683,8 +1683,8 @@ async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data["waiting_for_custom_text"] = True
         await db_manager.update_session(chat_id, current_step="WAITING_STUDIO_TEXT")
         msg = (
-            "✏️ *Apna Custom Text / Shayari Likh Kar Bhejiye:*\n\n"
-            "_(Jo bhi aap is photo par likhna chahte hain, bas is chat me message bhej dein. Bot turant isi photo par aapka text render karke preview dikhayega!)_"
+            "✏️ *Type your custom text / quote:*\n\n"
+            "Send your text in this chat, and the bot will instantly render a new preview with your lines on this photo!"
         )
         if query.message:
             await query.message.reply_text(msg, parse_mode="Markdown")

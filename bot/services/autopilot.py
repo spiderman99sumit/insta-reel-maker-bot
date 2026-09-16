@@ -169,10 +169,10 @@ async def auto_post_after_10min_callback(context: ContextTypes.DEFAULT_TYPE) -> 
         await context.bot.send_message(
             chat_id=chat_id,
             text=(
-                f"⏰ *10 Minutes Complete ({target_time_str})!*\n\n"
-                "Aapka koi reply nahi aaya tha, lekin Instagram account abhi bot me login nahi hai.\n\n"
-                "💡 *Connect karne ke liye:* `/insta_login username password` ya `/insta_session sessionid` karein.\n"
-                "Aap upar di gayi video ko download karke direct Instagram par upload kar sakte hain!"
+                f"⏰ *10 Minutes Elapsed ({target_time_str})*\n\n"
+                "Auto-post was skipped because your Instagram account is not connected yet.\n\n"
+                "💡 Connect your account: `/insta_login username password` or `/insta_session sessionid`\n"
+                "You can download the video above and upload it directly to Instagram!"
             ),
             parse_mode="Markdown",
         )
@@ -189,7 +189,7 @@ async def auto_post_after_10min_callback(context: ContextTypes.DEFAULT_TYPE) -> 
             chat_id=chat_id,
             text=(
                 f"🚀 *Auto-Posted to Instagram Successfully!*\n\n"
-                f"Aapka 10 minute me koi response/cancel nahi aaya tha, isliye scheduled time (*{target_time_str}*) par reel aapke Instagram par live publish kar di gayi hai! 🎉\n\n"
+                f"10 minutes elapsed without cancellation, so your reel was published live for the scheduled slot (*{target_time_str}*)! 🎉\n\n"
                 f"• Account: @{acc.get('username')}\n"
                 f"• Media ID: `{media_id}`"
             ),
@@ -202,8 +202,8 @@ async def auto_post_after_10min_callback(context: ContextTypes.DEFAULT_TYPE) -> 
         await context.bot.send_message(
             chat_id=chat_id,
             text=(
-                f"⚠️ *Auto-Post Failed:*\n{err}\n\n"
-                "Aap upar di gayi video ko manually Instagram par share kar sakte hain."
+                f"⚠️ *Instagram Auto-Post Failed:*\n{err}\n\n"
+                "You can download the video above and upload it manually to Instagram."
             ),
             parse_mode="Markdown",
         )
@@ -291,28 +291,26 @@ async def generate_and_deliver_scheduled_reel(
             logger.info(f"[AutoPilot] Armed 10-minute auto-post timer for {post_id}")
 
         caption = (
-            f"⏰ *10-Minute Advance Alert: Auto-Posting at {target_time_str}!* 🚀\n\n"
-            f"🎯 *Target Post Time:* *{target_time_str}* _(ab se theek 10 min baad)_\n"
+            f"⏰ *Reel Ready — Scheduled for {target_time_str}* 🚀\n\n"
             f"📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
-            f"📸 *Photo:* `{image_path.name}` *(Moved to Used ✅)*\n"
-            f"🎤 *Audio (Lyrics Vocal):* {song_title}\n\n"
-            f"📝 *Lyrics Quote:*\n"
+            f"📸 *Photo:* `{image_path.name}`\n"
+            f"🎤 *Audio:* {song_title}\n\n"
+            f"📝 *Text Overlay:*\n"
             f"_{hook_text}_\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👉 **AGAR AAP FREE HAIN:**\n"
-            f"Neeche *\"🙋‍♂️ Main Khud Post Kar Raha Hoon\"* dabayein ya chat me likhein. Bot is reel ko auto-post NAHI karega taaki duplicate na ho!\n\n"
-            f"👉 **AGAR AAP BUSY HAIN:**\n"
-            f"Kuch mat kijiye! Theek 10 min baad bot khud hi Instagram par live publish kar dega!\n"
+            f"⚡ **1-TAP ACTIONS:**\n"
+            f"• Tap **[✋ I'll Post Myself]** to post manually with your own audio.\n"
+            f"• Or do nothing — bot will automatically post at *{target_time_str}*!\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
         )
 
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("🙋‍♂️ Main Khud Post Kar Raha Hoon", callback_data=f"user_posting_{post_id}"),
+                InlineKeyboardButton("✋ I'll Post Myself", callback_data=f"user_posting_{post_id}"),
+                InlineKeyboardButton("🚀 Post Now", callback_data=f"post_now_{post_id}"),
             ],
             [
-                InlineKeyboardButton("🤖 Bot Post Kar De Abhi", callback_data=f"post_now_{post_id}"),
-                InlineKeyboardButton("🛑 Skip / Cancel", callback_data=f"cancel_autopost_{post_id}"),
+                InlineKeyboardButton("❌ Cancel", callback_data=f"cancel_autopost_{post_id}"),
             ],
         ])
 
@@ -393,11 +391,11 @@ async def autopilot_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await set_autopilot_status(chat_id, True)
             await update.effective_message.reply_text(
                 "✅ *AutoPilot Mode Activated!*\n\n"
-                "Bot ab daily 3 peak slots par theek 10 minute pehle automatically ready reel delivered karega:\n\n"
+                "The bot will automatically deliver ready reels 10 minutes before peak slots:\n\n"
                 "• 👑 *12:20 PM IST:* Desi Traditional (Auto-Post at 12:30 PM)\n"
                 "• 💖 *07:50 PM IST:* Romantic Love (Auto-Post at 08:00 PM)\n"
                 "• 🔥 *10:35 PM IST:* Sexy / Cinematic (Auto-Post at 10:45 PM)\n\n"
-                "_(💡 Agar 10 min me aap reply ya cancel nahi karenge, toh bot khud hi Instagram par live post kar dega!)_",
+                "_(💡 If not cancelled within 10 minutes, the bot will auto-publish to Instagram!)_",
                 parse_mode="Markdown",
             )
             return
@@ -405,14 +403,14 @@ async def autopilot_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         elif subcmd in ("off", "stop", "disable", "0"):
             await set_autopilot_status(chat_id, False)
             await update.effective_message.reply_text(
-                "⏸️ *AutoPilot Mode Paused!*\nDaily automated reel delivery band kar di gayi hai.\nDobara start karne ke liye `/autopilot on` dabayein.",
+                "⏸️ *AutoPilot Paused!*\nDaily automated reel delivery has been disabled.\nSend `/autopilot on` to resume anytime.",
                 parse_mode="Markdown",
             )
             return
 
         elif subcmd in ("test", "run", "now"):
             await update.effective_message.reply_text(
-                "⚡ *Running Instant AutoPilot Test (Pure Lyrics Audio)...*\nReel bankar 10-minute alert ke sath aa rahi hai...",
+                "⚡ *Running Instant AutoPilot Test...*\nGenerating reel with 10-minute advance alert...",
                 parse_mode="Markdown",
             )
             await generate_and_deliver_scheduled_reel(
@@ -433,15 +431,15 @@ async def autopilot_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     current_time_str = now_ist.strftime("%I:%M %p")
 
     msg = (
-        f"🤖 *Reel AutoPilot Schedule Status*\n\n"
+        f"🤖 *AutoPilot Posting Schedule*\n\n"
         f"• Status: *{status_icon}*\n"
         f"• Current Time: *{current_time_str} IST*\n"
-        f"• Audio Policy: 🎵 *Pure Lyrics Vocal Only (No BGM / No Instrumental)*\n"
-        f"• Policy: ⏳ *10 Min No-Reply -> Auto-Post to Instagram*\n\n"
-        "📅 *Daily 3-Reel Timetable:*\n"
-        "1️⃣ 👑 *Desi Traditional:* Delivery at *12:20 PM* (Auto-Post: 12:30 PM)\n"
-        "2️⃣ 💖 *Romantic Love:* Delivery at *07:50 PM* (Auto-Post: 08:00 PM)\n"
-        "3️⃣ 🔥 *Sexy / Cinematic:* Delivery at *10:35 PM* (Auto-Post: 10:45 PM)"
+        f"• Audio Policy: 🎵 *Pure Vocal Lyrics Only (No BGM / No Instrumental)*\n"
+        f"• Fallback: ⏳ *10 Min Inactive -> Auto-Post to Instagram*\n\n"
+        "📅 *Daily 3-Slot Schedule:*\n"
+        "1️⃣ 👑 *Desi Traditional:* 12:20 PM (Auto-Post: 12:30 PM)\n"
+        "2️⃣ 💖 *Romantic Love:* 07:50 PM (Auto-Post: 08:00 PM)\n"
+        "3️⃣ 🔥 *Sexy / Cinematic:* 10:35 PM (Auto-Post: 10:45 PM)"
     )
 
     toggle_btn = (
@@ -474,14 +472,14 @@ async def handle_autopilot_callbacks(update: Update, context: ContextTypes.DEFAU
             item["status"] = "user_handled"
             await query.edit_message_reply_markup(reply_markup=None)
             await query.message.reply_text(
-                "🙋‍♂️ *Noted! Aap khud post kar rahe hain.*\n\n"
-                "• Bot is reel ko Instagram par auto-post **NAHI** karega.\n"
-                "• Aap video save karke Instagram app me manpasand song ke sath post kar lijiye.\n\n"
-                "✅ _Duplicate posting avoided! Dono taraf se post hone ka koi chance nahi hai._",
+                "✋ *Auto-Post Cancelled!*\n\n"
+                "• Marked as self-posting — bot will **NOT** upload to Instagram.\n"
+                "• Download the video above and share it on Instagram with your favorite music.\n\n"
+                "✅ _Zero duplicate posting guaranteed._",
                 parse_mode="Markdown",
             )
         else:
-            await query.message.reply_text("✅ Noted! Bot duplicate post nahi karega.")
+            await query.message.reply_text("✅ Auto-post cancelled! Bot will not post.")
 
     elif data.startswith("cancel_autopost_"):
         post_id = data.replace("cancel_autopost_", "")
@@ -490,11 +488,11 @@ async def handle_autopilot_callbacks(update: Update, context: ContextTypes.DEFAU
             item["status"] = "canceled"
             await query.edit_message_reply_markup(reply_markup=None)
             await query.message.reply_text(
-                "🛑 *Auto-Post Cancelled!*\n\nYe reel Instagram par automatically post nahi hogi. Video aapke paas Telegram me save rahegi.",
+                "❌ *Reel Cancelled!*\n\nAuto-post has been stopped. The video remains saved in your chat.",
                 parse_mode="Markdown",
             )
         else:
-            await query.message.reply_text("⚠️ Timer already expired ya cancel ho chuka hai.")
+            await query.message.reply_text("⚠️ Timer has already expired or been cancelled.")
 
     elif data.startswith("post_now_"):
         post_id = data.replace("post_now_", "")
@@ -502,12 +500,12 @@ async def handle_autopilot_callbacks(update: Update, context: ContextTypes.DEFAU
         if item and item.get("status") in ("pending", "canceled"):
             item["status"] = "posting"
             await query.edit_message_reply_markup(reply_markup=None)
-            await query.message.reply_text("🚀 *Posting to Instagram right now...*", parse_mode="Markdown")
+            await query.message.reply_text("🚀 *Publishing to Instagram now...*", parse_mode="Markdown")
 
             acc = await instagram_service.is_connected(chat_id)
             if not acc:
                 await query.message.reply_text(
-                    "❌ *Instagram Not Connected!*\nUse `/insta_login` ya `/insta_session` to connect.",
+                    "❌ *Instagram Not Connected!*\nUse `/insta_login` or `/insta_session` to connect.",
                     parse_mode="Markdown",
                 )
                 return
@@ -520,7 +518,7 @@ async def handle_autopilot_callbacks(update: Update, context: ContextTypes.DEFAU
             if res.get("success"):
                 item["status"] = "posted"
                 await query.message.reply_text(
-                    f"🎉 *Posted to Instagram Successfully!*\nReel is live on @{acc.get('username')}! 🚀",
+                    f"🎉 *Published to Instagram Successfully!*\nReel is live on @{acc.get('username')}! 🚀",
                     parse_mode="Markdown",
                 )
             else:
@@ -530,20 +528,20 @@ async def handle_autopilot_callbacks(update: Update, context: ContextTypes.DEFAU
         await set_autopilot_status(chat_id, True)
         await query.edit_message_text(
             "✅ *AutoPilot Mode Activated!*\n\n"
-            "Bot ab har roz 12:20 PM, 7:50 PM aur 10:35 PM par ready reel deliver karega aur 10 min me koi reply na aane par khud post kar dega! 🚀",
+            "Daily reels will be delivered at 12:20 PM, 7:50 PM, and 10:35 PM IST with a 10-minute auto-post fallback! 🚀",
             parse_mode="Markdown",
         )
 
     elif data == "autopilot_toggle_off":
         await set_autopilot_status(chat_id, False)
         await query.edit_message_text(
-            "⏸️ *AutoPilot Mode Paused!*\nDaily auto reels abhi ke liye pause kar di gayi hain.",
+            "⏸️ *AutoPilot Mode Paused!*\nDaily automated reels are currently paused.",
             parse_mode="Markdown",
         )
 
     elif data == "autopilot_test_now":
         await query.edit_message_text(
-            "🧪 *Testing AutoPilot Reel Generation (Pure Lyrics Vocal)...*\nReel ban rahi hai aur 10-min alert test ke sath send hogi...",
+            "🧪 *Testing AutoPilot Reel Generation...*\nGenerating reel with 10-minute advance alert...",
             parse_mode="Markdown",
         )
         await generate_and_deliver_scheduled_reel(
