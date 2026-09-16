@@ -8,6 +8,7 @@ from typing import Optional
 
 from bot.services.text_overlay import create_text_overlay
 from bot.templates.styles import TemplateStyle, get_template
+from bot.utils.cleanup import safe_remove_file
 from bot.utils.config import config
 from bot.utils.ffmpeg_check import check_ffmpeg_installed, probe_media
 
@@ -21,6 +22,9 @@ class VideoEngineError(Exception):
 
 def run_ffmpeg_command(cmd: list) -> None:
     """Execute ffmpeg command safely with logging."""
+    # Ensure loglevel error is present to prevent massive stderr pipe buffering
+    if len(cmd) > 1 and "-loglevel" not in cmd:
+        cmd = [cmd[0], "-loglevel", "error"] + cmd[1:]
     logger.info(f"Running ffmpeg: {' '.join(str(c) for c in cmd)}")
     result = subprocess.run(
         cmd,
@@ -69,14 +73,19 @@ def render_single_pass_image_reel(
     if not check_ffmpeg_installed():
         raise VideoEngineError("FFmpeg is not installed")
 
+    # Step 1: Composite text overlay directly onto the base image using Pillow (instant, <10MB RAM)
+    from PIL import Image
+    composited_path = output_path.parent / f"{image_path.stem}_comp.jpg"
+    with Image.open(image_path) as base_im, Image.open(overlay_png_path) as ov_im:
+        base_rgba = base_im.convert("RGBA")
+        ov_rgba = ov_im.convert("RGBA")
+        comp = Image.alpha_composite(base_rgba, ov_rgba).convert("RGB")
+        comp.save(composited_path, "JPEG", quality=95)
+
     total_frames = int(duration * fps)
     fade_in_d = 0.8
     fade_out_st = max(0.0, duration - 1.5)
     fade_out_d = 1.5
-    text_fade_in_st = 0.5
-    text_fade_in_d = 0.8
-    text_fade_out_st = max(0.0, duration - 2.0)
-    text_fade_out_d = 1.2
 
     # Ken Burns motion expression
     if template.ken_burns == "zoom_in":
@@ -88,20 +97,17 @@ def render_single_pass_image_reel(
 
     has_audio = audio_path and audio_path.exists() and audio_path.stat().st_size > 1000
 
-    # Smooth Fade In from black at start, text alpha fade in/out, and smooth Fade Out to black at end
+    # Smooth Fade In from black at start and smooth Fade Out to black at end
     filter_complex = (
-        f"[0:v]{zoom_expr},fade=t=in:st=0:d={fade_in_d},fade=t=out:st={fade_out_st}:d={fade_out_d}[bg];"
-        f"[1:v]format=rgba,fade=t=in:st={text_fade_in_st}:d={text_fade_in_d}:alpha=1,fade=t=out:st={text_fade_out_st}:d={text_fade_out_d}:alpha=1[txt];"
-        f"[bg][txt]overlay=0:0:format=auto,format=yuv420p[v]"
+        f"[0:v]{zoom_expr},fade=t=in:st=0:d={fade_in_d},fade=t=out:st={fade_out_st}:d={fade_out_d},format=yuv420p[v]"
     )
 
     if has_audio:
-        filter_complex += f";[2:a]volume=0.85,afade=t=in:st=0:d=1.0,afade=t=out:st={fade_out_st}:d={fade_out_d}[a]"
+        filter_complex += f";[1:a]volume=0.85,afade=t=in:st=0:d=1.0,afade=t=out:st={fade_out_st}:d={fade_out_d}[a]"
 
     cmd = [
         "ffmpeg", "-y",
-        "-loop", "1", "-t", str(duration), "-i", str(image_path),
-        "-loop", "1", "-t", str(duration), "-i", str(overlay_png_path),
+        "-loop", "1", "-t", str(duration), "-i", str(composited_path),
     ]
 
     if has_audio:
@@ -112,21 +118,23 @@ def render_single_pass_image_reel(
     cmd.extend([
         "-filter_complex", filter_complex,
         "-map", "[v]",
-        "-map", "[a]" if has_audio else "2:a",
+        "-map", "[a]" if has_audio else "1:a",
         "-t", str(duration),
         "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-threads", "2",
+        "-preset", "ultrafast",
+        "-threads", "1",
         "-pix_fmt", "yuv420p",
         "-c:a", "aac",
         "-b:a", "128k",
         "-movflags", "+faststart",
-        "-shortest",
         str(output_path),
     ])
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    run_ffmpeg_command(cmd)
+    try:
+        run_ffmpeg_command(cmd)
+    finally:
+        safe_remove_file(composited_path)
     return output_path
 
 
@@ -300,26 +308,23 @@ def render_final_video(
     fade_out_d = 1.5
     text_fade_out_st = max(0.0, duration - 2.0)
 
-    # 1. Text alpha fade: fades in at 0.5s over 0.8s, stays, fades out at duration-2.0s over 1.2s
-    # 2. Video fade: fades in from black at 0s over 0.8s, fades out to black over the final 1.5s
     filter_complex = (
-        f"[1:v]format=rgba,fade=t=in:st=0.5:d=0.8:alpha=1,fade=t=out:st={text_fade_out_st}:d=1.2:alpha=1[txt];"
         f"[0:v]fade=t=in:st=0:d={fade_in_d},fade=t=out:st={fade_out_st}:d={fade_out_d}[bg];"
-        f"[bg][txt]overlay=0:0[v]"
+        f"[bg][1:v]overlay=0:0:eof_action=repeat[v]"
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
         "ffmpeg", "-y",
         "-i", str(video_path),
-        "-loop", "1", "-i", str(overlay_png_path),
+        "-i", str(overlay_png_path),
         "-filter_complex", filter_complex,
         "-map", "[v]",
         "-map", "0:a?",
         "-t", str(duration),
         "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-threads", "2",
+        "-preset", "ultrafast",
+        "-threads", "1",
         "-pix_fmt", "yuv420p",
         "-c:a", "copy",
         "-movflags", "+faststart",

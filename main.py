@@ -194,6 +194,17 @@ def start_health_server() -> None:
 
     class HealthHandler(BaseHTTPRequestHandler):
         def do_GET(self):
+            if self.path == "/logs":
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                try:
+                    with open("bot.log", "r", encoding="utf-8", errors="replace") as f:
+                        lines = f.readlines()
+                        self.wfile.write("".join(lines[-100:]).encode("utf-8"))
+                except Exception as e:
+                    self.wfile.write(f"Error reading bot.log: {e}".encode("utf-8"))
+                return
             self.send_response(200)
             self.send_header("Content-Type", "text/plain")
             self.end_headers()
