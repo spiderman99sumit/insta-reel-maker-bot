@@ -61,14 +61,14 @@ async def test_testing_mode_toggle(tmp_path: Path):
     mgr = DatabaseManager(db_file)
     await mgr.init_db()
 
-    # Default is True
+    # Default is False (Production mode)
     is_testing = await mgr.is_testing_mode()
-    assert is_testing is True
+    assert is_testing is False
 
-    # Toggle to False
-    await mgr.set_testing_mode(False)
-    assert await mgr.is_testing_mode() is False
-
-    # Toggle back to True
+    # Toggle to True
     await mgr.set_testing_mode(True)
     assert await mgr.is_testing_mode() is True
+
+    # Toggle back to False
+    await mgr.set_testing_mode(False)
+    assert await mgr.is_testing_mode() is False

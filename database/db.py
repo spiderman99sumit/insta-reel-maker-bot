@@ -58,6 +58,16 @@ class DatabaseManager:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         async with aiosqlite.connect(self.db_path) as db:
             await db.executescript(CREATE_TABLE_SQL)
+            # Default to production mode (testing_mode = 0)
+            await db.execute("INSERT OR IGNORE INTO bot_settings (key, value) VALUES ('testing_mode', '0');")
+            # Auto-seed existing session file if present
+            session_file = Path("data/sessions/instagram_5381201341.json")
+            if session_file.exists():
+                await db.execute("""
+                    INSERT OR REPLACE INTO instagram_accounts (
+                        telegram_chat_id, username, session_file, auto_post
+                    ) VALUES (5381201341, 'night_thought_12', 'data/sessions/instagram_5381201341.json', 1);
+                """)
             await db.commit()
             logger.info(f"Database initialized at {self.db_path}")
 
@@ -233,14 +243,14 @@ class DatabaseManager:
             await db.commit()
 
     async def is_testing_mode(self) -> bool:
-        """Check if bot is in testing mode (default True during testing phase)."""
+        """Check if bot is in testing mode (default False for live production)."""
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("CREATE TABLE IF NOT EXISTS bot_settings (key TEXT PRIMARY KEY, value TEXT);")
             async with db.execute("SELECT value FROM bot_settings WHERE key = 'testing_mode'") as cursor:
                 row = await cursor.fetchone()
                 if row:
                     return row[0] == "1"
-                return True
+                return False
 
     async def set_testing_mode(self, is_testing: bool) -> None:
         """Toggle testing mode."""

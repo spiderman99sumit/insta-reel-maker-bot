@@ -67,6 +67,7 @@ async def test_testing_mode_preserves_images(tmp_path: Path):
     mgr = DatabaseManager(db_file)
     await mgr.init_db()
 
+    await mgr.set_testing_mode(True)
     assert await mgr.is_testing_mode() is True
 
     cat_dir = tmp_path / "assets" / "images" / "categories" / "romantic"
