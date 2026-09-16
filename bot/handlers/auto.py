@@ -1267,13 +1267,15 @@ async def render_custom_selected_reel(
     chat_id = update.effective_chat.id
     cat = category or context.user_data.get("chosen_cat", "sexy")
     cat_info = get_category_info(cat)
-    img_opt = get_image_option(img_id)
-
-    # 1. Immediately record assets in DB so they will NEVER appear again!
-    await db_manager.record_used_asset(chat_id, "image", img_opt["id"])
-    await db_manager.record_used_asset(chat_id, "music", song_id)
-    await db_manager.record_used_asset(chat_id, "text", hook_text)
-    logger.info(f"Recorded used assets for chat {chat_id}: img={img_opt['id']}, song={song_id}, cat={cat}")
+    # 1. Immediately record assets in DB only when NOT in testing mode
+    is_testing = await db_manager.is_testing_mode()
+    if not is_testing:
+        await db_manager.record_used_asset(chat_id, "image", img_opt["id"])
+        await db_manager.record_used_asset(chat_id, "music", song_id)
+        await db_manager.record_used_asset(chat_id, "text", hook_text)
+        logger.info(f"Recorded used assets for chat {chat_id}: img={img_opt['id']}, song={song_id}, cat={cat}")
+    else:
+        logger.info(f"Testing mode: skipped recording used assets for chat {chat_id}")
 
     # 2. Resolve vocal track
     if resolved_audio_path and resolved_audio_path.exists():
@@ -1588,25 +1590,31 @@ async def execute_studio_reel_render(
     try:
         final_video_path = await execute_render_job(chat_id)
 
-        # 5. NOW AND ONLY NOW: Move image to used folder & mark in DB!
-        used_dir = Path("assets/images/used")
-        used_dir.mkdir(parents=True, exist_ok=True)
-        dest_used = used_dir / image_path.name
-        try:
-            if image_path.exists() and "assets/images/categories" in str(image_path).replace("\\", "/"):
-                shutil.move(str(image_path), str(dest_used))
-                logger.info(f"Image {image_path.name} moved to {dest_used}")
-        except Exception as e:
-            logger.warning(f"Error moving image to used: {e}")
+        # 5. Move image to used folder ONLY when NOT in testing mode
+        is_testing = await db_manager.is_testing_mode()
+        if not is_testing:
+            used_dir = Path("assets/images/used")
+            used_dir.mkdir(parents=True, exist_ok=True)
+            dest_used = used_dir / image_path.name
+            try:
+                if image_path.exists() and "assets/images/categories" in str(image_path).replace("\\", "/"):
+                    shutil.move(str(image_path), str(dest_used))
+                    logger.info(f"Image {image_path.name} moved to {dest_used}")
+            except Exception as e:
+                logger.warning(f"Error moving image to used: {e}")
 
-        await db_manager.record_used_asset(chat_id, "image", image_path.name)
-        await db_manager.record_used_asset(chat_id, "text", hook_text)
+            await db_manager.record_used_asset(chat_id, "image", image_path.name)
+            await db_manager.record_used_asset(chat_id, "text", hook_text)
+            status_tag = "*(Moved to Used Folder ✅)*"
+        else:
+            logger.info(f"Testing mode: kept {image_path.name} in category pool without moving to used")
+            status_tag = "*(Testing Mode — Kept in Pool 🔄)*"
 
         hashtags = "#reels #trending #viral #fyp #explore #explorepage #instareels #aesthetic"
         caption = (
             f"🔥 *Reel Ready!*\n\n"
             f"• 📂 *Category:* {cat_info['icon']} {cat_info['title']}\n"
-            f"• 📸 *Image:* `{image_path.name}` *(Moved to Used Folder ✅)*\n"
+            f"• 📸 *Image:* `{image_path.name}` {status_tag}\n"
             f"• 🎤 *Song:* {song_title}\n"
             f"• 📝 *Text:* \"{hook_text}\"\n\n"
             f"_{hook_text}_\n\n"
@@ -1787,7 +1795,8 @@ async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
         )
         context.user_data["custom_media_path"] = str(out_file)
         context.user_data["chosen_img"] = unique_id
-        await db_manager.record_used_asset(chat_id, "image", unique_id)
+        if not await db_manager.is_testing_mode():
+            await db_manager.record_used_asset(chat_id, "image", unique_id)
 
         fresh_hooks = await get_fresh_hook_options(chat_id, category=cat_id, limit=5)
         context.user_data["current_hook_options"] = fresh_hooks
@@ -1825,7 +1834,8 @@ async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
         )
         context.user_data["custom_media_path"] = str(out_file)
         context.user_data["chosen_img"] = unique_id
-        await db_manager.record_used_asset(chat_id, "image", unique_id)
+        if not await db_manager.is_testing_mode():
+            await db_manager.record_used_asset(chat_id, "image", unique_id)
 
         fresh_hooks = await get_fresh_hook_options(chat_id, category=cat_id, limit=5)
         context.user_data["current_hook_options"] = fresh_hooks

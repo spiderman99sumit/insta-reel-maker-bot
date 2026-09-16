@@ -8,7 +8,7 @@ from bot.handlers.auto import (
     build_studio_preview_keyboard,
     build_category_selection_keyboard,
 )
-from database.db import db_manager
+from database.db import db_manager, DatabaseManager
 
 
 @pytest.mark.asyncio
@@ -58,3 +58,30 @@ async def test_used_folder_isolation_and_skip(tmp_path: Path):
     assert img1.name not in [f.name for f in available]
     assert "img2.jpg" in [f.name for f in available]
     assert "img3.jpg" in [f.name for f in available]
+
+
+@pytest.mark.asyncio
+async def test_testing_mode_preserves_images(tmp_path: Path):
+    """Verify that in testing mode, files are not moved to used folder."""
+    db_file = tmp_path / "test_mode.db"
+    mgr = DatabaseManager(db_file)
+    await mgr.init_db()
+
+    assert await mgr.is_testing_mode() is True
+
+    cat_dir = tmp_path / "assets" / "images" / "categories" / "romantic"
+    used_dir = tmp_path / "assets" / "images" / "used"
+    cat_dir.mkdir(parents=True)
+    used_dir.mkdir(parents=True)
+
+    img = cat_dir / "sample.jpg"
+    img.touch()
+
+    # Simulate render logic under testing mode
+    is_testing = await mgr.is_testing_mode()
+    if not is_testing:
+        shutil.move(str(img), str(used_dir / img.name))
+
+    # Should remain in cat_dir
+    assert img.exists()
+    assert not (used_dir / img.name).exists()

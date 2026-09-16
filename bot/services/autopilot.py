@@ -254,19 +254,25 @@ async def generate_and_deliver_scheduled_reel(
         # Render video
         final_video_path = await execute_render_job(chat_id)
 
-        # Move image to assets/images/used/
-        used_dir = Path("assets/images/used")
-        used_dir.mkdir(parents=True, exist_ok=True)
-        dest_used = used_dir / image_path.name
-        try:
-            if image_path.exists() and "assets/images/categories" in str(image_path).replace("\\", "/"):
-                shutil.move(str(image_path), str(dest_used))
-                logger.info(f"[AutoPilot] Moved {image_path.name} to {dest_used}")
-        except Exception as e:
-            logger.warning(f"[AutoPilot] Could not move image: {e}")
+        # Move image to assets/images/used/ only if NOT in testing mode
+        is_testing = await db_manager.is_testing_mode()
+        if not is_testing:
+            used_dir = Path("assets/images/used")
+            used_dir.mkdir(parents=True, exist_ok=True)
+            dest_used = used_dir / image_path.name
+            try:
+                if image_path.exists() and "assets/images/categories" in str(image_path).replace("\\", "/"):
+                    shutil.move(str(image_path), str(dest_used))
+                    logger.info(f"[AutoPilot] Moved {image_path.name} to {dest_used}")
+            except Exception as e:
+                logger.warning(f"[AutoPilot] Could not move image: {e}")
 
-        await db_manager.record_used_asset(chat_id, "image", image_path.name)
-        await db_manager.record_used_asset(chat_id, "text", hook_text)
+            await db_manager.record_used_asset(chat_id, "image", image_path.name)
+            await db_manager.record_used_asset(chat_id, "text", hook_text)
+            status_tag = "*(Moved to Used Folder ✅)*"
+        else:
+            logger.info(f"[AutoPilot] Testing mode: kept {image_path.name} in category pool without moving to used")
+            status_tag = "*(Testing Mode — Kept in Pool 🔄)*"
 
         hashtags = "#reels #trending #viral #fyp #explore #explorepage #instareels #aesthetic"
         ig_caption = f"{hook_text}\n\n{hashtags}"
@@ -293,13 +299,13 @@ async def generate_and_deliver_scheduled_reel(
         caption = (
             f"⏰ *Reel Ready — Scheduled for {target_time_str}* 🚀\n\n"
             f"📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
-            f"📸 *Photo:* `{image_path.name}`\n"
+            f"📸 *Photo:* `{image_path.name}` {status_tag}\n"
             f"🎤 *Audio:* {song_title}\n\n"
             f"📝 *Text Overlay:*\n"
             f"_{hook_text}_\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"⚡ **1-TAP ACTIONS:**\n"
-            f"• Tap **[✋ I'll Post Myself]** to post manually with your own audio.\n"
+            f"⚡ *1-TAP ACTIONS:*\n"
+            f"• Tap *[✋ I'll Post Myself]* to post manually with your own audio.\n"
             f"• Or do nothing — bot will automatically post at *{target_time_str}*!\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━"
         )
@@ -331,7 +337,7 @@ async def generate_and_deliver_scheduled_reel(
         logger.error(f"[AutoPilot] Reel generation failed for chat {chat_id}: {e}", exc_info=True)
         await bot.send_message(
             chat_id=chat_id,
-            text=f"⚠️ *AutoPilot Notification:*\nSchedule reel banate waqt error aaya: {e}",
+            text=f"⚠️ *AutoPilot Notification:*\nError while generating scheduled reel: {e}",
             parse_mode="Markdown",
         )
 
@@ -457,6 +463,45 @@ async def autopilot_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     ])
 
     await update.effective_message.reply_text(msg, reply_markup=keyboard, parse_mode="Markdown")
+
+
+@restricted
+async def testing_mode_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /testing_mode command to toggle testing vs live production mode."""
+    chat_id = update.effective_chat.id
+    args = context.args or []
+    if args:
+        subcmd = args[0].lower().strip()
+        if subcmd in ("on", "1", "true", "start", "enable"):
+            await db_manager.set_testing_mode(True)
+            await update.effective_message.reply_text(
+                "🧪 *Testing Mode is now ON!*\n\n"
+                "• Photos will **NEVER** be moved to `used/` folder.\n"
+                "• All assets remain 100% reusable for testing.\n"
+                "• Zero duplicate-prevention locks applied during testing.\n\n"
+                "When you are ready to start live production, run `/testing_mode off`.",
+                parse_mode="Markdown",
+            )
+            return
+        elif subcmd in ("off", "0", "false", "stop", "live", "disable"):
+            await db_manager.set_testing_mode(False)
+            await update.effective_message.reply_text(
+                "🚀 *Production Mode is now ACTIVE (Testing Mode OFF)!*\n\n"
+                "• Rendered photos will be moved to `used/` folder to ensure zero duplicates.\n"
+                "• Used history tracking is fully enabled.",
+                parse_mode="Markdown",
+            )
+            return
+
+    is_testing = await db_manager.is_testing_mode()
+    status_str = "🟢 ON (Safe - Photos Kept in Pool)" if is_testing else "🔴 OFF (Production - Photos Moved to Used)"
+    await update.effective_message.reply_text(
+        f"🧪 *Testing Mode Status:* {status_str}\n\n"
+        f"To toggle:\n"
+        f"• `/testing_mode on` — Keep all photos in category pool (no moving)\n"
+        f"• `/testing_mode off` — Move used photos to `used/` (Production)",
+        parse_mode="Markdown",
+    )
 
 
 async def handle_autopilot_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

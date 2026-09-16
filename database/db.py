@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS used_history (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_used_history ON used_history(telegram_chat_id, asset_type);
+
+CREATE TABLE IF NOT EXISTS bot_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
 """
 
 
@@ -225,6 +230,27 @@ class DatabaseManager:
                     "DELETE FROM used_history WHERE telegram_chat_id = ?",
                     (chat_id,),
                 )
+            await db.commit()
+
+    async def is_testing_mode(self) -> bool:
+        """Check if bot is in testing mode (default True during testing phase)."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("CREATE TABLE IF NOT EXISTS bot_settings (key TEXT PRIMARY KEY, value TEXT);")
+            async with db.execute("SELECT value FROM bot_settings WHERE key = 'testing_mode'") as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    return row[0] == "1"
+                return True
+
+    async def set_testing_mode(self, is_testing: bool) -> None:
+        """Toggle testing mode."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("CREATE TABLE IF NOT EXISTS bot_settings (key TEXT PRIMARY KEY, value TEXT);")
+            await db.execute(
+                "INSERT INTO bot_settings (key, value) VALUES ('testing_mode', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = ?;",
+                ("1" if is_testing else "0", "1" if is_testing else "0"),
+            )
             await db.commit()
 
 

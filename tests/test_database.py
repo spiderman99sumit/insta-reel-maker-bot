@@ -52,3 +52,23 @@ async def test_session_lifecycle(tmp_path: Path):
     session = await mgr.get_session(chat_id)
     assert session["current_step"] == "IDLE"
     assert session["media_path"] is None
+
+
+@pytest.mark.asyncio
+async def test_testing_mode_toggle(tmp_path: Path):
+    """Test testing mode default and toggling in database."""
+    db_file = tmp_path / "test_settings.db"
+    mgr = DatabaseManager(db_file)
+    await mgr.init_db()
+
+    # Default is True
+    is_testing = await mgr.is_testing_mode()
+    assert is_testing is True
+
+    # Toggle to False
+    await mgr.set_testing_mode(False)
+    assert await mgr.is_testing_mode() is False
+
+    # Toggle back to True
+    await mgr.set_testing_mode(True)
+    assert await mgr.is_testing_mode() is True

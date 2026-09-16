@@ -45,6 +45,7 @@ from bot.services.autopilot import (
     autopilot_command,
     handle_autopilot_callbacks,
     register_autopilot_jobs,
+    testing_mode_command,
 )
 from bot.handlers.instagram_handler import (
     insta_login_command,
@@ -160,6 +161,7 @@ async def setup_bot() -> Application:
 
     # Register Autopilot & Instagram Commands
     app.add_handler(CommandHandler(["autopilot", "schedule"], autopilot_command))
+    app.add_handler(CommandHandler(["testing_mode", "test_mode", "testing"], testing_mode_command))
     app.add_handler(CommandHandler("insta_login", insta_login_command))
     app.add_handler(CommandHandler("insta_session", insta_session_command))
     app.add_handler(CommandHandler("insta_status", insta_status_command))
