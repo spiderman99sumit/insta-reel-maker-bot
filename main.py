@@ -149,7 +149,7 @@ async def setup_bot() -> Application:
 
     # Register Callback Query Handlers (Template selection & Autonomous)
     app.add_handler(CallbackQueryHandler(handle_template_selection, pattern=r"^tmpl_"))
-    app.add_handler(CallbackQueryHandler(handle_auto_callbacks, pattern=r"^(cat_|pick_|shuffle_|back_|auto_|reel_|gen_|fetch_|reset_|upload_)"))
+    app.add_handler(CallbackQueryHandler(handle_auto_callbacks, pattern=r"^(cat_|pick_|shuffle_|back_|auto_|reel_|gen_|fetch_|reset_|upload_|studio_)"))
     app.add_handler(CallbackQueryHandler(handle_post_to_insta_callback, pattern=r"^post_insta"))
 
     # Register Instagram Commands

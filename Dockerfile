@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Ensure data directories exist
-RUN mkdir -p data/input data/output data/temp data/audio assets/fonts assets/music/bollywood assets/images/candid database
+RUN mkdir -p data/input data/output data/temp data/audio assets/fonts assets/music/bollywood assets/images/candid assets/images/used assets/images/categories/sexy assets/images/categories/romantic assets/images/categories/cinematic assets/images/categories/traditional database
 
 # Run bot
 CMD ["python", "main.py"]

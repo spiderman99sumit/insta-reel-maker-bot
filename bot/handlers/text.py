@@ -18,6 +18,13 @@ async def handle_overlay_text(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     step = session.get("current_step") if session else None
 
+    if step == "WAITING_STUDIO_TEXT" or context.user_data.get("waiting_for_custom_text"):
+        text = update.effective_message.text.strip()
+        context.user_data["waiting_for_custom_text"] = False
+        from bot.handlers.auto import handle_studio_custom_text_input
+        await handle_studio_custom_text_input(update, context, custom_text=text)
+        return
+
     if step in ("WAITING_AI_TEXT", "WAITING_CUSTOM_TEXT"):
         text = update.effective_message.text.strip()
         from bot.handlers.auto import complete_custom_reel_flow

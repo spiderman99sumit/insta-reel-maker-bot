@@ -1417,6 +1417,226 @@ async def complete_custom_reel_flow(update: Update, context: ContextTypes.DEFAUL
     await send_visual_text_preview(update, context, chat_id, img_id=img_id, hook_text=custom_text, cat_id=cat)
 
 
+
+
+# -------------------------------------------------------------
+# Interactive Studio Flow with Used Folder & Instant Previews
+# -------------------------------------------------------------
+
+def get_random_category_image(cat_id: str, chat_id: int) -> Path:
+    """Pick a random unused image from assets/images/categories/{cat_id}."""
+    cat_dir = Path("assets/images/categories") / cat_id
+    used_dir = Path("assets/images/used")
+
+    if not cat_dir.exists():
+        cat_dir = Path("assets/images/candid")
+
+    used_names = set()
+    if used_dir.exists():
+        for f in used_dir.iterdir():
+            if f.is_file():
+                used_names.add(f.name)
+
+    files = [f for f in cat_dir.iterdir() if f.is_file() and f.suffix.lower() in (".jpg", ".jpeg", ".png")]
+    available = [f for f in files if f.name not in used_names]
+
+    if not available:
+        available = files
+
+    if not available:
+        return Path("assets/images/candid/red_saree_candid_selfie.jpg")
+
+    return random.choice(available)
+
+
+def build_studio_preview_keyboard() -> InlineKeyboardMarkup:
+    """Action buttons attached to the live 1080x1920 preview image."""
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🎬 Render Reel (Final)", callback_data="studio_render")
+        ],
+        [
+            InlineKeyboardButton("⏭️ Skip (Next Photo)", callback_data="studio_skip"),
+            InlineKeyboardButton("🔄 New Shayari", callback_data="studio_new_text"),
+        ],
+        [
+            InlineKeyboardButton("✏️ Custom Text", callback_data="studio_custom_text"),
+            InlineKeyboardButton("🔙 Change Category", callback_data="back_to_cats"),
+        ],
+    ])
+
+
+async def send_interactive_studio_preview(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    cat_id: str,
+    image_path: Optional[Path] = None,
+    custom_text: Optional[str] = None,
+    force_new_img: bool = False,
+) -> None:
+    """Generate 1080x1920 preview with text and present Skip/Render/Custom-Text buttons."""
+    chat_id = update.effective_chat.id
+    cat_info = get_category_info(cat_id)
+
+    # 1. Resolve image
+    if force_new_img or not image_path or not image_path.exists():
+        image_path = get_random_category_image(cat_id, chat_id)
+
+    # 2. Resolve text
+    if not custom_text:
+        cat_hooks = [h["text"] for h in ALL_HOOK_OPTIONS if cat_id in h.get("categories", [])]
+        if not cat_hooks:
+            cat_hooks = [h["text"] for h in ALL_HOOK_OPTIONS]
+        chosen_text = random.choice(cat_hooks)
+    else:
+        chosen_text = custom_text
+
+    # 3. Store in context & session
+    context.user_data["chosen_cat"] = cat_id
+    context.user_data["studio_img_path"] = str(image_path)
+    context.user_data["studio_text"] = chosen_text
+    context.user_data["waiting_for_custom_text"] = False
+
+    await db_manager.start_reel_session(chat_id)
+    await db_manager.update_session(
+        chat_id,
+        current_step="STUDIO_PREVIEW",
+        media_path=str(image_path),
+        overlay_text=chosen_text,
+        selected_template=cat_id,
+    )
+
+    # 4. Generate composite preview (1080x1920)
+    timestamp = int(asyncio.get_event_loop().time())
+    preview_path = config.temp_dir / f"{chat_id}_studio_{timestamp}.jpg"
+
+    await asyncio.to_thread(
+        generate_preview_composite,
+        image_path=image_path,
+        text=chosen_text,
+        template_key=cat_id,
+        output_path=preview_path,
+    )
+
+    caption = (
+        f"📸 *Live Reel Studio Preview*\n\n"
+        f"• 📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
+        f"• 🖼️ *Image:* `{image_path.name}`\n"
+        f"• ✍️ *Text:* \"_{chosen_text}_\"\n\n"
+        f"👉 *Pasand aaye toh \"🎬 Render Reel\" dabayein!*\n"
+        f"👉 *Nayi photo ke liye \"⏭️ Skip\" dabayein (ye photo waste nahi hogi).*\n"
+        f"👉 *Apna text likhne ke liye \"✏️ Custom Text\" dabayein.*"
+    )
+
+    with open(preview_path, "rb") as photo_f:
+        await context.bot.send_photo(
+            chat_id=chat_id,
+            photo=photo_f,
+            caption=caption,
+            reply_markup=build_studio_preview_keyboard(),
+            parse_mode="Markdown",
+        )
+
+
+async def handle_studio_custom_text_input(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    custom_text: str,
+) -> None:
+    """Re-render studio preview with user's custom entered text."""
+    cat_id = context.user_data.get("chosen_cat", "sexy")
+    img_p_str = context.user_data.get("studio_img_path")
+    img_p = Path(img_p_str) if (img_p_str and Path(img_p_str).exists()) else None
+
+    await send_interactive_studio_preview(
+        update,
+        context,
+        cat_id=cat_id,
+        image_path=img_p,
+        custom_text=custom_text,
+        force_new_img=False,
+    )
+
+
+async def execute_studio_reel_render(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    chat_id: int,
+    image_path: Path,
+    hook_text: str,
+    cat_id: str,
+) -> None:
+    """Render full 9:16 reel, move image to assets/images/used/ and record in DB."""
+    cat_info = get_category_info(cat_id)
+    vocal_path = music_service.get_bollywood_track(cat_id)
+    song_title = music_service.get_track_title(vocal_path)
+
+    timestamp = int(asyncio.get_event_loop().time())
+    deployed_img = config.input_dir / f"{chat_id}_studio_{timestamp}.jpg"
+    shutil.copy(image_path, deployed_img)
+
+    await db_manager.start_reel_session(chat_id)
+    await db_manager.update_session(
+        chat_id,
+        media_path=str(deployed_img),
+        media_type="image",
+        overlay_text=hook_text,
+        selected_template=cat_id,
+        music_path=str(vocal_path) if vocal_path else None,
+    )
+
+    try:
+        final_video_path = await execute_render_job(chat_id)
+
+        # 5. NOW AND ONLY NOW: Move image to used folder & mark in DB!
+        used_dir = Path("assets/images/used")
+        used_dir.mkdir(parents=True, exist_ok=True)
+        dest_used = used_dir / image_path.name
+        try:
+            if image_path.exists() and "assets/images/categories" in str(image_path).replace("\\", "/"):
+                shutil.move(str(image_path), str(dest_used))
+                logger.info(f"Image {image_path.name} moved to {dest_used}")
+        except Exception as e:
+            logger.warning(f"Error moving image to used: {e}")
+
+        await db_manager.record_used_asset(chat_id, "image", image_path.name)
+        await db_manager.record_used_asset(chat_id, "text", hook_text)
+
+        hashtags = "#reels #trending #viral #fyp #explore #explorepage #instareels #aesthetic"
+        caption = (
+            f"🔥 *Reel Ready!*\n\n"
+            f"• 📂 *Category:* {cat_info['icon']} {cat_info['title']}\n"
+            f"• 📸 *Image:* `{image_path.name}` *(Moved to Used Folder ✅)*\n"
+            f"• 🎤 *Song:* {song_title}\n"
+            f"• 📝 *Text:* \"{hook_text}\"\n\n"
+            f"_{hook_text}_\n\n"
+            f"{hashtags}"
+        )
+
+        with open(final_video_path, "rb") as video_file:
+            await context.bot.send_video(
+                chat_id=chat_id,
+                video=video_file,
+                caption=caption,
+                supports_streaming=True,
+                parse_mode="Markdown",
+            )
+
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="✨ *Agla Reel Banayein:* Category choose karein:",
+            reply_markup=build_category_selection_keyboard(),
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        logger.error(f"Studio reel render failed: {e}", exc_info=True)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❌ *Render Error:* {e}\nKripya /auto dabakar dobara try karein.",
+            parse_mode="Markdown",
+        )
+
+
 @restricted
 async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle interactive button presses for the Category-First 5-5-5 selection flow."""
@@ -1432,23 +1652,62 @@ async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
     if data.startswith("cat_"):
         cat_id = data.replace("cat_", "")
         context.user_data["chosen_cat"] = cat_id
-        cat_info = get_category_info(cat_id)
+        try:
+            await query.delete_message()
+        except Exception:
+            pass
+        await send_interactive_studio_preview(update, context, cat_id=cat_id, force_new_img=True)
+        return
 
-        fresh_images = await get_fresh_image_options(chat_id, category=cat_id, limit=5)
-        context.user_data["current_img_options"] = fresh_images
+    elif data == "studio_skip":
+        cat_id = context.user_data.get("chosen_cat", "sexy")
+        try:
+            await query.delete_message()
+        except Exception:
+            pass
+        await send_interactive_studio_preview(update, context, cat_id=cat_id, force_new_img=True)
+        return
 
+    elif data == "studio_new_text":
+        cat_id = context.user_data.get("chosen_cat", "sexy")
+        img_p_str = context.user_data.get("studio_img_path")
+        img_p = Path(img_p_str) if img_p_str else None
+        try:
+            await query.delete_message()
+        except Exception:
+            pass
+        await send_interactive_studio_preview(update, context, cat_id=cat_id, image_path=img_p, custom_text=None, force_new_img=False)
+        return
+
+    elif data == "studio_custom_text":
+        context.user_data["waiting_for_custom_text"] = True
+        await db_manager.update_session(chat_id, current_step="WAITING_STUDIO_TEXT")
         msg = (
-            f"📸 *Step 1 of 3: Choose Visual (Image)*\n\n"
-            f"📂 *Category:* {cat_info['icon']} *{cat_info['title']}*\n"
-            f"_{cat_info['desc']}_\n\n"
-            "Select 1 of 5 authentic candid photo aesthetics below:\n"
-            "_(💡 Options match your category and never repeat!)_"
+            "✏️ *Apna Custom Text / Shayari Likh Kar Bhejiye:*\n\n"
+            "_(Jo bhi aap is photo par likhna chahte hain, bas is chat me message bhej dein. Bot turant isi photo par aapka text render karke preview dikhayega!)_"
         )
-        await query.edit_message_text(
-            msg,
-            reply_markup=build_image_selection_keyboard(fresh_images, category=cat_id),
-            parse_mode="Markdown",
-        )
+        if query.message:
+            await query.message.reply_text(msg, parse_mode="Markdown")
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
+        return
+
+    elif data == "studio_render":
+        cat_id = context.user_data.get("chosen_cat", "sexy")
+        img_p_str = context.user_data.get("studio_img_path")
+        hook_text = context.user_data.get("studio_text", "teri aankhon mein doob jane ka mann karta hai... 🖤")
+        img_p = Path(img_p_str) if (img_p_str and Path(img_p_str).exists()) else get_random_category_image(cat_id, chat_id)
+
+        try:
+            await query.edit_message_caption(
+                caption=f"⚡ *Reel Rendering Started...*\n\n• Category: *{cat_id.title()}*\n• Image: `{img_p.name}`\n\n_1080x1920 HD video mixing with Bollywood vocals..._",
+                parse_mode="Markdown",
+            )
+        except Exception:
+            pass
+
+        await execute_studio_reel_render(update, context, chat_id=chat_id, image_path=img_p, hook_text=hook_text, cat_id=cat_id)
+        return
 
     # -------------------------------------------------------------
     # Shuffle Images for Current Category
