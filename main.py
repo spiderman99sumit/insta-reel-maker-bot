@@ -41,6 +41,11 @@ from bot.handlers.auto import (
     set_gemini_key_command,
     set_openai_key_command,
 )
+from bot.services.autopilot import (
+    autopilot_command,
+    handle_autopilot_callbacks,
+    register_autopilot_jobs,
+)
 from bot.handlers.instagram_handler import (
     insta_login_command,
     insta_session_command,
@@ -151,8 +156,10 @@ async def setup_bot() -> Application:
     app.add_handler(CallbackQueryHandler(handle_template_selection, pattern=r"^tmpl_"))
     app.add_handler(CallbackQueryHandler(handle_auto_callbacks, pattern=r"^(cat_|pick_|shuffle_|back_|auto_|reel_|gen_|fetch_|reset_|upload_|studio_)"))
     app.add_handler(CallbackQueryHandler(handle_post_to_insta_callback, pattern=r"^post_insta"))
+    app.add_handler(CallbackQueryHandler(handle_autopilot_callbacks, pattern=r"^(autopilot_|cancel_autopost_|post_now_)"))
 
-    # Register Instagram Commands
+    # Register Autopilot & Instagram Commands
+    app.add_handler(CommandHandler(["autopilot", "schedule"], autopilot_command))
     app.add_handler(CommandHandler("insta_login", insta_login_command))
     app.add_handler(CommandHandler("insta_session", insta_session_command))
     app.add_handler(CommandHandler("insta_status", insta_status_command))
@@ -162,10 +169,11 @@ async def setup_bot() -> Application:
     # Register Global Error Handler
     app.add_error_handler(global_error_handler)
 
-    # Register Periodic Cleanup Job (every 60 minutes)
+    # Register Periodic Cleanup Job & Daily AutoPilot Schedulers
     if app.job_queue:
         app.job_queue.run_repeating(periodic_cleanup_job, interval=3600, first=60)
         logger.info("Scheduled retention cleanup job (interval: 1 hour)")
+        register_autopilot_jobs(app)
 
     return app
 
