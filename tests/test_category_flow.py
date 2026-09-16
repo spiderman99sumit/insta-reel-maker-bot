@@ -22,8 +22,8 @@ from database.db import db_manager
 @pytest.mark.asyncio
 async def test_category_options_coverage():
     """Verify all categories exist and have sufficient assets."""
-    assert len(CATEGORIES) >= 4
-    for cat in ["sexy", "bestie", "romantic", "cinematic", "traditional"]:
+    assert len(CATEGORIES) >= 8
+    for cat in ["sexy", "baddie", "bestie", "romantic", "cinematic", "traditional", "broken", "aesthetic"]:
         assert cat in CATEGORIES
         cat_info = CATEGORIES[cat]
         assert "title" in cat_info
@@ -36,7 +36,7 @@ async def test_category_dynamic_filtering():
     chat_id = 999888777
     await db_manager.clear_used_assets(chat_id)
 
-    for cat in ["sexy", "bestie", "romantic", "cinematic", "traditional"]:
+    for cat in ["sexy", "baddie", "bestie", "romantic", "cinematic", "traditional", "broken", "aesthetic"]:
         images = await get_fresh_image_options(chat_id, category=cat, limit=5)
         assert len(images) == 5, f"Category {cat} should have 5 image options"
 
@@ -53,10 +53,13 @@ async def test_category_keyboards_structure():
     cat_kb = build_category_selection_keyboard()
     flat_cat = [btn.callback_data for row in cat_kb.inline_keyboard for btn in row]
     assert "cat_sexy" in flat_cat
+    assert "cat_baddie" in flat_cat
     assert "cat_bestie" in flat_cat
     assert "cat_romantic" in flat_cat
     assert "cat_cinematic" in flat_cat
     assert "cat_traditional" in flat_cat
+    assert "cat_broken" in flat_cat
+    assert "cat_aesthetic" in flat_cat
 
     # Image keyboard
     sample_imgs = ALL_IMAGE_OPTIONS[:5]

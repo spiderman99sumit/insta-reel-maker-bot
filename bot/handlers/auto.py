@@ -29,14 +29,21 @@ from database.db import db_manager
 
 logger = logging.getLogger(__name__)
 
-# Core Categories / Vibes
+# Core Categories / Vibes (8 Curated Aesthetic Styles)
 CATEGORIES: Dict[str, Dict[str, Any]] = {
     "sexy": {
         "id": "sexy",
+        "title": "Sexy / Flirty Desi",
+        "icon": "💋",
+        "desc": "Bold candid selfies, sultry flirty glances & backless aesthetic",
+        "style": "sexy",
+    },
+    "baddie": {
+        "id": "baddie",
         "title": "Hot & Baddie / Attitude",
         "icon": "🔥",
-        "desc": "Bold attitude, mirror selfies, sassy baddie vibes & self-love",
-        "style": "sexy",
+        "desc": "Sassy attitude, baddie vibes, mirror selfies & self-love",
+        "style": "baddie",
     },
     "bestie": {
         "id": "bestie",
@@ -65,6 +72,20 @@ CATEGORIES: Dict[str, Dict[str, Any]] = {
         "icon": "👑",
         "desc": "Royal silk sarees, classic Indian poise & timeless shayari",
         "style": "traditional",
+    },
+    "broken": {
+        "id": "broken",
+        "title": "Broken Heart / Dard",
+        "icon": "💔",
+        "desc": "Emotional heartbreak, deep pain, sad poetry & melancholic melodies",
+        "style": "cinematic",
+    },
+    "aesthetic": {
+        "id": "aesthetic",
+        "title": "Aesthetic / Soft Glow",
+        "icon": "✨",
+        "desc": "Golden hour glow, peaceful vibes, soft lifestyle & calm soul",
+        "style": "minimal",
     },
 }
 
@@ -792,68 +813,78 @@ ALL_IMAGE_OPTIONS: List[Dict[str, Any]] = [
     },
 ]
 
-# Curated Viral Lyrical Hindi/Hinglish Hooks & Quotes categorized
+# Curated Viral Lyrical Hindi/Hinglish Hooks & Quotes categorized across 8 vibes
 ALL_HOOK_OPTIONS: List[Dict[str, Any]] = [
     # -------------------------------------------------------------
-    # 1. Hot & Baddie / Attitude / Self-Love (Mirror Selfies & Glam)
+    # 1. Sexy / Flirty Desi (Sultry, Bold Glances & Sensual)
     # -------------------------------------------------------------
-    {"id": "h_hot_1", "text": "main khud apni *favorite* hoon, kisi aur ki validation ki zaroorat nahi 💅✨", "categories": ["sexy"]},
-    {"id": "h_hot_2", "text": "too *pretty* to be stressing over anybody 💋", "categories": ["sexy"]},
-    {"id": "h_hot_3", "text": "hot girls don't chase, they get chased 🔥", "categories": ["sexy"]},
-    {"id": "h_hot_4", "text": "not everyone's cup of tea, I'm expensive *champagne* 🥂", "categories": ["sexy"]},
-    {"id": "h_hot_5", "text": "tera *standard* match karne ke liye hume drop hona padega darling 💅", "categories": ["sexy"]},
-    {"id": "h_hot_6", "text": "she looked like art, but walked like a *storm* 🔥", "categories": ["sexy"]},
-    {"id": "h_hot_7", "text": "cutie with a little bit of *savage* 💋", "categories": ["sexy"]},
-    {"id": "h_hot_8", "text": "*unbothered*, moisturized, in my own lane 💅✨", "categories": ["sexy"]},
-    {"id": "h_hot_9", "text": "my *vibe* is rare, handle with care 🖤", "categories": ["sexy"]},
-    {"id": "h_hot_10", "text": "they stare because they can't afford me 🔥", "categories": ["sexy"]},
-    {"id": "h_hot_11", "text": "pretty face, killer *attitude* 💋", "categories": ["sexy"]},
-    {"id": "h_hot_12", "text": "born to stand out, never to fit in 💎", "categories": ["sexy"]},
-    {"id": "h_hot_13", "text": "she got that quiet confidence that screams loud 🔥", "categories": ["sexy"]},
-    {"id": "h_hot_14", "text": "hume dekh kar ignore karna toh namumkin hai darling 💋", "categories": ["sexy"]},
-    {"id": "h_hot_15", "text": "sweet as sugar, cold as ice, hurt me once, I'll break you twice 🖤", "categories": ["sexy"]},
-    {"id": "h_hot_16", "text": "expensive taste, dangerous mind 🔥", "categories": ["sexy"]},
-    {"id": "h_hot_17", "text": "apna *standard* itna high hai ki log bas dekhte reh jaate hain 💅", "categories": ["sexy"]},
-    {"id": "h_hot_18", "text": "confidence level: selfie with zero filter ✨", "categories": ["sexy"]},
-    {"id": "h_hot_19", "text": "sabki pasand banne ka shauk nahi, hum khud ke liye kaafi hain 👑", "categories": ["sexy"]},
-    {"id": "h_hot_20", "text": "pretty in picture, deadly in person 💋", "categories": ["sexy"]},
-    {"id": "h_hot_21", "text": "a little bit of heaven with a wild side 🖤", "categories": ["sexy"]},
-    {"id": "h_hot_22", "text": "classy, sassy, and a bit bad-assy 🔥", "categories": ["sexy"]},
-    {"id": "h_hot_23", "text": "hum alag hi level pe hain, samajh aane me waqt lagega 💋", "categories": ["sexy"]},
-    {"id": "h_hot_24", "text": "mirror selfies hit different when you know you're the *prize* 🪞✨", "categories": ["sexy"]},
-    {"id": "h_hot_25", "text": "i am my own biggest *crush* 💋✨", "categories": ["sexy"]},
-    {"id": "h_hot_26", "text": "making heads turn without even trying 🔥", "categories": ["sexy"]},
-    {"id": "h_hot_27", "text": "too *glam* to give a damn 💅", "categories": ["sexy"]},
-    {"id": "h_hot_28", "text": "catch flights, not feelings ✈️✨", "categories": ["sexy"]},
+    {"id": "h_sxy_1", "text": "hume dekh kar muskurana aapki aadat hai ya niyat? 💋", "categories": ["sexy"]},
+    {"id": "h_sxy_2", "text": "teri ek jhalak hi kafi hai madhosh karne ke liye... 🔥", "categories": ["sexy"]},
+    {"id": "h_sxy_3", "text": "itni haseen ho ki nazar hatana gunah lagta hai... 💋", "categories": ["sexy"]},
+    {"id": "h_sxy_4", "text": "thodi si ziddi, thodi si shaitaan, par jaan se zyada pyari... 🖤", "categories": ["sexy"]},
+    {"id": "h_sxy_5", "text": "nazar milte hi dil dhadakne lage toh samajh lo kissa shuru... 💋", "categories": ["sexy"]},
+    {"id": "h_sxy_6", "text": "bold, beautiful, and unapologetically *desi* 🔥", "categories": ["sexy"]},
+    {"id": "h_sxy_7", "text": "nasha aankhon mein hai, log bewajah sharab ko badnaam karte hain... 🍷", "categories": ["sexy"]},
+    {"id": "h_sxy_8", "text": "husn ka kya kaam saadgi ke aage, par unki ada ne maar daala... 💋", "categories": ["sexy"]},
+    {"id": "h_sxy_9", "text": "teri *nigahein* sidha dil par teer chalati hain... 🖤", "categories": ["sexy"]},
+    {"id": "h_sxy_10", "text": "dil sambhal kar rakhna, humari ek muskurahat hi kafi hai... 🔥", "categories": ["sexy"]},
+    {"id": "h_sxy_11", "text": "itna mat dekho hume, kahin ishq na ho jaaye... 💋", "categories": ["sexy"]},
+    {"id": "h_sxy_12", "text": "aankhon se shuru hui thi baat, ab baat rooh tak pahunch chuki hai... 🖤", "categories": ["sexy"]},
 
     # -------------------------------------------------------------
-    # 2. Bestie Love / BFF Goals / Sisterhood
+    # 2. Hot & Baddie / Attitude / Self-Love (Mirror Selfies & Glam)
     # -------------------------------------------------------------
-    {"id": "h_bst_1", "text": "nazar na lage meri cute *bestie* ko 🧿✨", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_2", "text": "meri jaan, meri *crime* partner, meri forever bestie 👯‍♀️❤️", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_3", "text": "us: 99% *drama*, 1% innocent, 100% unbreakable 👯‍♀️", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_4", "text": "duniya ek taraf, meri *bestie* ek taraf 🧿👑", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_5", "text": "tera mera *rishta* kuch aisa hai, bina bole sab samajh aana 🤍", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_6", "text": "bestie *goals*: finding someone just as unhinged as me 💖", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_7", "text": "bhagwan ne shakal cute di hai, aur *bestie* thodi pagal 🤪", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_8", "text": "you're the *sister* I got to choose 👯‍♀️💕", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_9", "text": "humesha sath rehna meri pagal *bestie*, tere bina sab boring hai 🌸", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_10", "text": "partners in *crime* and late night gossip 🥂✨", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_11", "text": "tere jaisi pagal *bestie* sabko mile, par meri wali sirf meri hai 🧿❤️", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_12", "text": "two pretty best *friends* making memories everywhere 👯‍♀️", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_13", "text": "she knows all my secrets and still *loves* me 🤍", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_14", "text": "bestie ke sath *drama* bhi aesthetic lagta hai 💅✨", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_15", "text": "real *queens* fix each other's crowns 👑✨", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_16", "text": "forever grateful for a *bestie* like you 🧿💫", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_17", "text": "main aur meri bestie: maximum *chaos*, pure love 👯‍♀️🔥", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_18", "text": "humaari *dosti* par kisi ki nazar na lage 🧿❤️", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_19", "text": "life was meant for best *friends* and good adventures 🥂✨", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_20", "text": "tera mera sath janam janam ka hai *bestie* 💖", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_21", "text": "*soulmate* in the form of a best friend 👯‍♀️💕", "categories": ["bestie", "sexy"]},
-    {"id": "h_bst_22", "text": "tere bina mera koi bhi plan complete nahi hota *bestie* 🌸", "categories": ["bestie", "sexy"]},
+    {"id": "h_bad_1", "text": "main khud apni *favorite* hoon, kisi aur ki validation ki zaroorat nahi 💅✨", "categories": ["baddie"]},
+    {"id": "h_bad_2", "text": "too *pretty* to be stressing over anybody 💋", "categories": ["baddie"]},
+    {"id": "h_bad_3", "text": "hot girls don't chase, they get chased 🔥", "categories": ["baddie"]},
+    {"id": "h_bad_4", "text": "not everyone's cup of tea, I'm expensive *champagne* 🥂", "categories": ["baddie"]},
+    {"id": "h_bad_5", "text": "tera *standard* match karne ke liye hume drop hona padega darling 💅", "categories": ["baddie"]},
+    {"id": "h_bad_6", "text": "she looked like art, but walked like a *storm* 🔥", "categories": ["baddie"]},
+    {"id": "h_bad_7", "text": "cutie with a little bit of *savage* 💋", "categories": ["baddie"]},
+    {"id": "h_bad_8", "text": "*unbothered*, moisturized, in my own lane 💅✨", "categories": ["baddie"]},
+    {"id": "h_bad_9", "text": "my *vibe* is rare, handle with care 🖤", "categories": ["baddie"]},
+    {"id": "h_bad_10", "text": "they stare because they can't afford me 🔥", "categories": ["baddie"]},
+    {"id": "h_bad_11", "text": "pretty face, killer *attitude* 💋", "categories": ["baddie"]},
+    {"id": "h_bad_12", "text": "born to stand out, never to fit in 💎", "categories": ["baddie"]},
+    {"id": "h_bad_13", "text": "she got that quiet confidence that screams loud 🔥", "categories": ["baddie"]},
+    {"id": "h_bad_14", "text": "hume dekh kar ignore karna toh namumkin hai darling 💋", "categories": ["baddie"]},
+    {"id": "h_bad_15", "text": "sweet as sugar, cold as ice, hurt me once, I'll break you twice 🖤", "categories": ["baddie"]},
+    {"id": "h_bad_16", "text": "expensive taste, dangerous mind 🔥", "categories": ["baddie"]},
+    {"id": "h_bad_17", "text": "apna *standard* itna high hai ki log bas dekhte reh jaate hain 💅", "categories": ["baddie"]},
+    {"id": "h_bad_18", "text": "confidence level: selfie with zero filter ✨", "categories": ["baddie"]},
+    {"id": "h_bad_19", "text": "sabki pasand banne ka shauk nahi, hum khud ke liye kaafi hain 👑", "categories": ["baddie"]},
+    {"id": "h_bad_20", "text": "pretty in picture, deadly in person 💋", "categories": ["baddie"]},
+    {"id": "h_bad_21", "text": "mirror selfies hit different when you know you're the *prize* 🪞✨", "categories": ["baddie"]},
+    {"id": "h_bad_22", "text": "i am my own biggest *crush* 💋✨", "categories": ["baddie"]},
+    {"id": "h_bad_23", "text": "making heads turn without even trying 🔥", "categories": ["baddie"]},
+    {"id": "h_bad_24", "text": "too *glam* to give a damn 💅", "categories": ["baddie"]},
 
     # -------------------------------------------------------------
-    # 3. Romantic / Love (Soulmate Couple Quotes)
+    # 3. Bestie Love / BFF Goals / Sisterhood
+    # -------------------------------------------------------------
+    {"id": "h_bst_1", "text": "nazar na lage meri cute *bestie* ko 🧿✨", "categories": ["bestie"]},
+    {"id": "h_bst_2", "text": "meri jaan, meri *crime* partner, meri forever bestie 👯‍♀️❤️", "categories": ["bestie"]},
+    {"id": "h_bst_3", "text": "us: 99% *drama*, 1% innocent, 100% unbreakable 👯‍♀️", "categories": ["bestie"]},
+    {"id": "h_bst_4", "text": "duniya ek taraf, meri *bestie* ek taraf 🧿👑", "categories": ["bestie"]},
+    {"id": "h_bst_5", "text": "tera mera *rishta* kuch aisa hai, bina bole sab samajh aana 🤍", "categories": ["bestie"]},
+    {"id": "h_bst_6", "text": "bestie *goals*: finding someone just as unhinged as me 💖", "categories": ["bestie"]},
+    {"id": "h_bst_7", "text": "bhagwan ne shakal cute di hai, aur *bestie* thodi pagal 🤪", "categories": ["bestie"]},
+    {"id": "h_bst_8", "text": "you're the *sister* I got to choose 👯‍♀️💕", "categories": ["bestie"]},
+    {"id": "h_bst_9", "text": "humesha sath rehna meri pagal *bestie*, tere bina sab boring hai 🌸", "categories": ["bestie"]},
+    {"id": "h_bst_10", "text": "partners in *crime* and late night gossip 🥂✨", "categories": ["bestie"]},
+    {"id": "h_bst_11", "text": "tere jaisi pagal *bestie* sabko mile, par meri wali sirf meri hai 🧿❤️", "categories": ["bestie"]},
+    {"id": "h_bst_12", "text": "two pretty best *friends* making memories everywhere 👯‍♀️", "categories": ["bestie"]},
+    {"id": "h_bst_13", "text": "she knows all my secrets and still *loves* me 🤍", "categories": ["bestie"]},
+    {"id": "h_bst_14", "text": "bestie ke sath *drama* bhi aesthetic lagta hai 💅✨", "categories": ["bestie"]},
+    {"id": "h_bst_15", "text": "real *queens* fix each other's crowns 👑✨", "categories": ["bestie"]},
+    {"id": "h_bst_16", "text": "forever grateful for a *bestie* like you 🧿💫", "categories": ["bestie"]},
+    {"id": "h_bst_17", "text": "main aur meri bestie: maximum *chaos*, pure love 👯‍♀️🔥", "categories": ["bestie"]},
+    {"id": "h_bst_18", "text": "humaari *dosti* par kisi ki nazar na lage 🧿❤️", "categories": ["bestie"]},
+    {"id": "h_bst_19", "text": "life was meant for best *friends* and good adventures 🥂✨", "categories": ["bestie"]},
+    {"id": "h_bst_20", "text": "tera mera sath janam janam ka hai *bestie* 💖", "categories": ["bestie"]},
+
+    # -------------------------------------------------------------
+    # 4. Romantic / Love (Soulmate Couple Quotes)
     # -------------------------------------------------------------
     {"id": "h_rom_1", "text": "teri *aankhon* mein doob jane ka mann karta hai... 🖤", "categories": ["romantic"]},
     {"id": "h_rom_2", "text": "kuch log *dil* mein aise bas jaate hain ki unke baad koi accha nahi lagta... 🥀", "categories": ["romantic"]},
@@ -867,16 +898,12 @@ ALL_HOOK_OPTIONS: List[Dict[str, Any]] = [
     {"id": "h_rom_10", "text": "*dil* ka sukoon ho tum, jiske bina sab adhoora lagta hai... 🌸", "categories": ["romantic"]},
     {"id": "h_rom_11", "text": "tere saath beeta har lamha kisi *khwab* jaisa haseen lagta hai... 🕊️", "categories": ["romantic"]},
     {"id": "h_rom_12", "text": "*ishq* wahi jo aankhon se shuru ho aur rooh mein utar jaaye... 🖤", "categories": ["romantic"]},
-    {"id": "h_rom_13", "text": "tumhe paane ki chahat nahi, bas tumhe khush dekhne ki *tamanna* hai... 🌙", "categories": ["romantic"]},
-    {"id": "h_rom_14", "text": "tera hona hi mere har din ka sabse *khoobsurat* hissa hai... 🤍", "categories": ["romantic"]},
-    {"id": "h_rom_15", "text": "mere dil ki saari *dhadkan* ab tere naam se shuru hoti hain... 🌸", "categories": ["romantic"]},
-    {"id": "h_rom_16", "text": "tum mil gaye toh jaise saari *duniya* mil gayi... 💖", "categories": ["romantic"]},
-    {"id": "h_rom_17", "text": "hamesha saath rehna, kyunki tumhare bina mera koi *wajood* nahi... 🕊️", "categories": ["romantic"]},
-    {"id": "h_rom_18", "text": "*mohabbat* lafzon ki mohtaj nahi hoti, bas do dilon ka ehsaas kaafi hai... 💌", "categories": ["romantic"]},
-    {"id": "h_rom_19", "text": "tumhe chahna meri aadat nahi, meri *rooh* ka hissa ban chuka hai... 🖤", "categories": ["romantic"]},
+    {"id": "h_rom_13", "text": "tum mil gaye toh jaise saari *duniya* mil gayi... 💖", "categories": ["romantic"]},
+    {"id": "h_rom_14", "text": "hamesha saath rehna, kyunki tumhare bina mera koi *wajood* nahi... 🕊️", "categories": ["romantic"]},
+    {"id": "h_rom_15", "text": "*mohabbat* lafzon ki mohtaj nahi hoti, bas do dilon ka ehsaas kaafi hai... 💌", "categories": ["romantic"]},
 
     # -------------------------------------------------------------
-    # 4. Late Night / Cinematic (Moody & Deep)
+    # 5. Late Night / Cinematic (Moody & Deep Thoughts)
     # -------------------------------------------------------------
     {"id": "h_cin_1", "text": "kuch baatein lafzon se nahi, bas ek nazar dekh kar bayaan ho jaati hain... 👁️", "categories": ["cinematic"]},
     {"id": "h_cin_2", "text": "ab toh aadat si ho gayi hai har waqt tera *khayal* aane ki... 🥀", "categories": ["cinematic"]},
@@ -885,19 +912,39 @@ ALL_HOOK_OPTIONS: List[Dict[str, Any]] = [
     {"id": "h_cin_5", "text": "raat ki *khamoshi* mein aksar wo log yaad aate hain jo kismat mein nahi hote... 🌙", "categories": ["cinematic"]},
     {"id": "h_cin_6", "text": "kuch kahaniyaan adhoori reh kar bhi sabse *khoobsurat* hoti hain... 🖤", "categories": ["cinematic"]},
     {"id": "h_cin_7", "text": "*khamoshi* sabse gehri aawaz hoti hai, bas sunne wala chahiye... 🕯️", "categories": ["cinematic"]},
-    {"id": "h_cin_8", "text": "sirf ek baar muskura kar dekh lo, saari thakaan utar jaati hai... 🕯️", "categories": ["cinematic"]},
 
     # -------------------------------------------------------------
-    # 5. Desi Traditional (Royal Silk & Shayari)
+    # 6. Desi Traditional (Royal Silk, Jhumka & Shayari)
     # -------------------------------------------------------------
     {"id": "h_trad_1", "text": "hum toh fida the unki *saadgi* par, wo muskuraye aur hum ghayal ho gaye... 💋", "categories": ["traditional"]},
     {"id": "h_trad_2", "text": "kabhi fursat mile toh aana hamare *dil* mein, wahan sirf tumhara hi naam hai... 💌", "categories": ["traditional"]},
     {"id": "h_trad_3", "text": "khushnaseeb hain wo jo roz tera *deedar* karte hain... 💖", "categories": ["traditional"]},
     {"id": "h_trad_4", "text": "tujhe sochna bhi kisi *ibadat* se kam nahi lagta... 💫", "categories": ["traditional"]},
-    {"id": "h_trad_5", "text": "kuch log zindagi mein bina maange hi sabse anmol tofa ban kar aate hain... 🌹", "categories": ["traditional"]},
-    {"id": "h_trad_6", "text": "jhumke ki chamak aur unki *saadgi*, dil haar baithe hum... 🪔", "categories": ["traditional"]},
-    {"id": "h_trad_7", "text": "teri *saadgi* par ye dil fida hai, kisi shringar ki zaroorat nahi... 👑", "categories": ["traditional"]},
-    {"id": "h_trad_8", "text": "banarasi libaas mein wo aayi toh laga jaise koi pari zameen par utar aayi... 🌸", "categories": ["traditional"]},
+    {"id": "h_trad_5", "text": "jhumke ki chamak aur unki *saadgi*, dil haar baithe hum... 🪔", "categories": ["traditional"]},
+    {"id": "h_trad_6", "text": "teri *saadgi* par ye dil fida hai, kisi shringar ki zaroorat nahi... 👑", "categories": ["traditional"]},
+    {"id": "h_trad_7", "text": "banarasi libaas mein wo aayi toh laga jaise koi pari zameen par utar aayi... 🌸", "categories": ["traditional"]},
+
+    # -------------------------------------------------------------
+    # 7. Broken Heart / Dard (Sad Shayari & Soulful Pain)
+    # -------------------------------------------------------------
+    {"id": "h_brk_1", "text": "kuch dard aise hote hain jo bayaan nahi kiye jaate, bas chup rehna padta hai... 💔", "categories": ["broken"]},
+    {"id": "h_brk_2", "text": "hum unhe *yaad* karte rahe jo hume bhula chuke the... 🥀", "categories": ["broken"]},
+    {"id": "h_brk_3", "text": "waqt badalta hai toh log badalte hain, par *dard* wahi rehta hai... 🌧️", "categories": ["broken"]},
+    {"id": "h_brk_4", "text": "kash tum samajh paate ki kitna *chahte* the tumhe... 🖤", "categories": ["broken"]},
+    {"id": "h_brk_5", "text": "ab kisi se koi shikayat nahi, bas khud se thoda gila hai... 🥀", "categories": ["broken"]},
+    {"id": "h_brk_6", "text": "hans kar sehna seekh liya, kyunki aansu pochne wala koi nahi... 💔", "categories": ["broken"]},
+    {"id": "h_brk_7", "text": "itna toota hoon ki ab bikharne ka bhi darr nahi lagta... 🕯️", "categories": ["broken"]},
+
+    # -------------------------------------------------------------
+    # 8. Aesthetic / Soft Glow (Peaceful, Golden Hour & Mindful)
+    # -------------------------------------------------------------
+    {"id": "h_aes_1", "text": "romanticizing every little moment of my life 🌸✨", "categories": ["aesthetic"]},
+    {"id": "h_aes_2", "text": "soft eyes, warm *heart*, peaceful mind 🕊️", "categories": ["aesthetic"]},
+    {"id": "h_aes_3", "text": "chasing sunsets, golden hour *glow* and good energy ✨", "categories": ["aesthetic"]},
+    {"id": "h_aes_4", "text": "finding *magic* in the ordinary days 💫", "categories": ["aesthetic"]},
+    {"id": "h_aes_5", "text": "collecting moments, not things 🌿✨", "categories": ["aesthetic"]},
+    {"id": "h_aes_6", "text": "peace over drama, distance over disrespect 🕊️", "categories": ["aesthetic"]},
+    {"id": "h_aes_7", "text": "living gently, loving deeply, dreaming softly 🌸", "categories": ["aesthetic"]},
 ]
 
 
@@ -955,11 +1002,12 @@ async def get_fresh_image_options(
     used = await db_manager.get_used_assets(chat_id, "image")
     cat = category.lower().strip() if category else None
     if cat:
-        pool = [
-            opt for opt in ALL_IMAGE_OPTIONS
-            if cat in opt.get("categories", [])
-            or (cat == "bestie" and "sexy" in opt.get("categories", []))
-        ]
+        if cat in ("sexy", "baddie", "bestie", "aesthetic", "hot"):
+            pool = [opt for opt in ALL_IMAGE_OPTIONS if any(c in opt.get("categories", []) for c in ("sexy", "baddie", "bestie", "aesthetic"))]
+        elif cat in ("cinematic", "broken"):
+            pool = [opt for opt in ALL_IMAGE_OPTIONS if any(c in opt.get("categories", []) for c in ("cinematic", "broken"))]
+        else:
+            pool = [opt for opt in ALL_IMAGE_OPTIONS if cat in opt.get("categories", [])]
         if not pool:
             pool = ALL_IMAGE_OPTIONS
     else:
@@ -1041,18 +1089,23 @@ async def get_fresh_hook_options(
 
 
 def build_category_selection_keyboard() -> InlineKeyboardMarkup:
-    """Step 0: Category / Vibe Selection."""
+    """Step 0: Category / Vibe Selection (8 Curated Vibes)."""
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("🔥 Hot & Baddie", callback_data="cat_sexy"),
+            InlineKeyboardButton("💋 Sexy / Flirty Desi", callback_data="cat_sexy"),
+            InlineKeyboardButton("🔥 Hot & Baddie", callback_data="cat_baddie"),
+        ],
+        [
             InlineKeyboardButton("👯‍♀️ Bestie Love", callback_data="cat_bestie"),
-        ],
-        [
             InlineKeyboardButton("💖 Romantic Love", callback_data="cat_romantic"),
-            InlineKeyboardButton("🎬 Late Night Cinematic", callback_data="cat_cinematic"),
         ],
         [
+            InlineKeyboardButton("🎬 Late Night Cinematic", callback_data="cat_cinematic"),
             InlineKeyboardButton("👑 Desi Traditional", callback_data="cat_traditional"),
+        ],
+        [
+            InlineKeyboardButton("💔 Broken Heart / Dard", callback_data="cat_broken"),
+            InlineKeyboardButton("✨ Aesthetic / Soft", callback_data="cat_aesthetic"),
         ],
     ])
 
@@ -1072,13 +1125,12 @@ def build_image_selection_keyboard(options: List[Dict[str, Any]], category: Opti
 
     # Dynamic AI & Pinterest generation buttons
     keyboard.append([
-        InlineKeyboardButton("✨ Generate New AI Photo", callback_data="gen_ai_photo"),
-        InlineKeyboardButton("📌 Fetch Pinterest Photo", callback_data="fetch_pin_photo"),
+        InlineKeyboardButton("✨ Generate AI Candid Visual", callback_data="gen_ai_photo"),
+        InlineKeyboardButton("📌 Fresh Pinterest Photo", callback_data="fetch_pin_photo"),
     ])
 
-    # Upload Own Image row
     keyboard.append([
-        InlineKeyboardButton("📸 Send / Upload My Own Photo", callback_data="upload_own_img"),
+        InlineKeyboardButton("📸 Use My Own Uploaded Photo", callback_data="upload_own_img"),
     ])
 
     # Utility row: Shuffle & Random
@@ -1150,9 +1202,13 @@ async def auto_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "🎬 *Reel Studio: Choose Your Category*\n\n"
         "Please select the vibe / category for your reel first:\n\n"
         "• 💋 *Sexy / Flirty Desi:* Bold candid selfies & sultry vibes\n"
+        "• 🔥 *Hot & Baddie / Attitude:* Sassy attitude & self-love\n"
+        "• 👯‍♀️ *Bestie Love / Duo Goals:* Cute bestie bonds & sisterhood\n"
         "• 💖 *Romantic / Love:* Pastel sarees & heartwarming love lyrics\n"
         "• 🎬 *Late Night / Cinematic:* Neon bokeh & late night thoughts\n"
-        "• 👑 *Desi Traditional:* Royal sarees & timeless shayari\n\n"
+        "• 👑 *Desi Traditional:* Royal sarees & timeless shayari\n"
+        "• 💔 *Broken Heart / Dard:* Emotional heartbreak & soulful pain\n"
+        "• ✨ *Aesthetic / Soft Glow:* Golden hour & peaceful calm vibes\n\n"
         "_(💡 Visuals, text hooks & Bollywood songs will strictly adapt to your choice!)_"
     )
     if update.effective_message:
@@ -1516,7 +1572,17 @@ async def complete_custom_reel_flow(update: Update, context: ContextTypes.DEFAUL
 
 def get_random_category_image(cat_id: str, chat_id: int) -> Path:
     """Pick a random unused image from assets/images/categories/{cat_id}."""
-    folder = "sexy" if cat_id in ("sexy", "bestie", "hot") else cat_id
+    if cat_id in ("sexy", "baddie", "bestie", "aesthetic", "hot"):
+        folder = "sexy"
+    elif cat_id in ("cinematic", "broken"):
+        folder = "cinematic"
+    elif cat_id in ("romantic",):
+        folder = "romantic"
+    elif cat_id in ("traditional",):
+        folder = "traditional"
+    else:
+        folder = "sexy"
+
     cat_dir = Path("assets/images/categories") / folder
     used_dir = Path("assets/images/used")
 

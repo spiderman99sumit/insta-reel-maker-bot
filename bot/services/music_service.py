@@ -189,7 +189,8 @@ class MusicService:
             cat_pool = [
                 t for t in VOCAL_TRACKS
                 if any(cat in aff.lower() for aff in t.get("style_affinity", []))
-                or (cat == "bestie" and any(aff.lower() in ("sexy", "romantic") for aff in t.get("style_affinity", [])))
+                or (cat in ("baddie", "bestie", "aesthetic") and any(aff.lower() in ("sexy", "romantic") for aff in t.get("style_affinity", [])))
+                or (cat == "broken" and any(aff.lower() in ("cinematic", "romantic") for aff in t.get("style_affinity", [])))
             ]
             # If category has tracks, use that pool; else fallback to all
             pool = cat_pool if cat_pool else VOCAL_TRACKS
@@ -384,7 +385,8 @@ class MusicService:
                 p for p in tracks
                 if p.name in TRACK_METADATA and (
                     style_lower in TRACK_METADATA[p.name].get("style_affinity", [])
-                    or (style_lower == "bestie" and any(s in TRACK_METADATA[p.name].get("style_affinity", []) for s in ["sexy", "romantic"]))
+                    or (style_lower in ("baddie", "bestie", "aesthetic") and any(s in TRACK_METADATA[p.name].get("style_affinity", []) for s in ["sexy", "romantic"]))
+                    or (style_lower == "broken" and any(s in TRACK_METADATA[p.name].get("style_affinity", []) for s in ["cinematic", "romantic"]))
                 )
             ]
             if candidates:
