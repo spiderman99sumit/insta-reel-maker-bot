@@ -99,6 +99,18 @@ async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYP
             pass
 
 
+async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Periodically ping Render web service to prevent Free Tier from sleeping."""
+    import urllib.request
+    url = "https://insta-reel-maker-bot.onrender.com/"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "RenderKeepAlive/1.0"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            logger.info(f"[KeepAlive] Render web service pinged successfully (HTTP {resp.status})")
+    except Exception as e:
+        logger.warning(f"[KeepAlive] Render ping failed: {e}")
+
+
 async def setup_bot() -> Application:
     """Verify prerequisites, initialize database, and register handlers."""
     logger.info("Verifying environment...")
@@ -171,10 +183,12 @@ async def setup_bot() -> Application:
     # Register Global Error Handler
     app.add_error_handler(global_error_handler)
 
-    # Register Periodic Cleanup Job & Daily AutoPilot Schedulers
+    # Register Periodic Cleanup Job, Keep-Alive Job & Daily AutoPilot Schedulers
     if app.job_queue:
         app.job_queue.run_repeating(periodic_cleanup_job, interval=3600, first=60)
         logger.info("Scheduled retention cleanup job (interval: 1 hour)")
+        app.job_queue.run_repeating(render_keep_alive_job, interval=480, first=30)
+        logger.info("Registered 24/7 Keep-Alive ping job (interval: 8 mins)")
         register_autopilot_jobs(app)
 
     return app
@@ -184,6 +198,8 @@ def start_health_server() -> None:
     """Run lightweight HTTP healthcheck server for cloud hosting (Render, Koyeb, Railway)."""
     import os
     import threading
+    import time
+    import urllib.request
     from http.server import HTTPServer, BaseHTTPRequestHandler
 
     port_str = os.environ.get("PORT")
@@ -218,6 +234,22 @@ def start_health_server() -> None:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         logger.info(f"Healthcheck server listening on port {port}")
+
+        # Additional daemon thread pinger for Render 24/7 uptime
+        def _daemon_pinger():
+            time.sleep(45)
+            url = "https://insta-reel-maker-bot.onrender.com/"
+            while True:
+                try:
+                    req = urllib.request.Request(url, headers={"User-Agent": "DaemonKeepAlive/1.0"})
+                    urllib.request.urlopen(req, timeout=20)
+                except Exception:
+                    pass
+                time.sleep(480)
+
+        pinger_thread = threading.Thread(target=_daemon_pinger, daemon=True)
+        pinger_thread.start()
+        logger.info("Keep-alive daemon thread started (pings every 8 minutes)")
     except Exception as e:
         logger.warning(f"Could not start healthcheck server on port {port}: {e}")
 
@@ -231,7 +263,7 @@ def main() -> None:
     app = loop.run_until_complete(setup_bot())
 
     logger.info("🚀 Telegram Reel Maker Bot is running and polling for updates...")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=False)
 
 
 if __name__ == "__main__":
