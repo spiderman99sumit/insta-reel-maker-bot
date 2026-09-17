@@ -13,28 +13,22 @@ from bot.services.autopilot import (
 
 
 def test_daily_slots_configuration():
-    """Verify the 3 daily posting slots are correctly configured."""
-    assert len(DAILY_SLOTS) == 3
+    """Verify all 8 curated daily posting slots are correctly configured."""
+    assert len(DAILY_SLOTS) == 8
 
-    # Slot 1: Traditional (12:20 PM delivery, 12:30 PM post)
-    s1 = DAILY_SLOTS[0]
-    assert s1["category"] == "traditional"
-    assert s1["hour"] == 12
-    assert s1["minute"] == 20
-    assert "12:30 PM" in s1["target_post_time_str"]
+    # Check that all 8 categories exist in DAILY_SLOTS
+    expected_categories = {
+        "aesthetic", "bestie", "traditional", "broken",
+        "romantic", "baddie", "sexy", "cinematic"
+    }
+    configured_categories = {s["category"] for s in DAILY_SLOTS}
+    assert configured_categories == expected_categories
 
-    # Slot 2: Romantic (07:50 PM delivery, 08:00 PM post)
-    s2 = DAILY_SLOTS[1]
-    assert s2["category"] == "romantic"
-    assert s2["hour"] == 19
-    assert s2["minute"] == 50
-    assert "08:00 PM" in s2["target_post_time_str"]
-
-    # Slot 3: Night Owl (10:35 PM delivery, 10:45 PM post)
-    s3 = DAILY_SLOTS[2]
-    assert s3["hour"] == 22
-    assert s3["minute"] == 35
-    assert "10:45 PM" in s3["target_post_time_str"]
+    for slot in DAILY_SLOTS:
+        assert "delivery_time_str" in slot
+        assert "target_post_time_str" in slot
+        assert 0 <= slot["hour"] <= 23
+        assert 0 <= slot["minute"] <= 59
 
 
 @pytest.mark.asyncio

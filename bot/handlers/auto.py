@@ -1243,11 +1243,14 @@ async def handle_quick_text_triggers(update: Update, context: ContextTypes.DEFAU
         msg = (
             "🎬 *Reel Studio: Choose Your Category*\n\n"
             "Select the vibe / category for your reel first:\n\n"
-            "• 🔥 *Hot & Baddie / Attitude*\n"
-            "• 👯‍♀️ *Bestie Love / Duo Goals*\n"
-            "• 💖 *Romantic / Love*\n"
-            "• 🎬 *Late Night / Cinematic*\n"
-            "• 👑 *Desi Traditional*\n\n"
+            "• 💋 *Sexy / Flirty Desi:* Bold candid selfies & sultry vibes\n"
+            "• 🔥 *Hot & Baddie / Attitude:* Sassy attitude & self-love\n"
+            "• 👯‍♀️ *Bestie Love / Duo Goals:* Cute bestie bonds & sisterhood\n"
+            "• 💖 *Romantic / Love:* Pastel sarees & heartwarming love lyrics\n"
+            "• 🎬 *Late Night / Cinematic:* Neon bokeh & late night thoughts\n"
+            "• 👑 *Desi Traditional:* Royal sarees & timeless shayari\n"
+            "• 💔 *Broken Heart / Dard:* Emotional heartbreak & soulful pain\n"
+            "• ✨ *Aesthetic / Soft Glow:* Golden hour & peaceful calm vibes\n\n"
             "_(💡 Your choice determines matching candid images, hooks & songs!)_"
         )
         await message.reply_text(
@@ -1572,22 +1575,12 @@ async def complete_custom_reel_flow(update: Update, context: ContextTypes.DEFAUL
 
 def get_random_category_image(cat_id: str, chat_id: int) -> Path:
     """Pick a random unused image from assets/images/categories/{cat_id}."""
-    if cat_id in ("sexy", "baddie", "bestie", "aesthetic", "hot"):
-        folder = "sexy"
-    elif cat_id in ("cinematic", "broken"):
-        folder = "cinematic"
-    elif cat_id in ("romantic",):
-        folder = "romantic"
-    elif cat_id in ("traditional",):
-        folder = "traditional"
-    else:
-        folder = "sexy"
-
+    folder = cat_id.lower().strip() if cat_id else "sexy"
     cat_dir = Path("assets/images/categories") / folder
     used_dir = Path("assets/images/used")
 
     if not cat_dir.exists():
-        cat_dir = Path("assets/images/candid")
+        cat_dir = Path("assets/images/categories/sexy")
 
     used_names = set()
     if used_dir.exists():
@@ -1904,10 +1897,14 @@ async def handle_auto_callbacks(update: Update, context: ContextTypes.DEFAULT_TY
         msg = (
             "🎬 *Reel Studio: Choose Your Category*\n\n"
             "Please select the vibe / category for your reel first:\n\n"
-            "• 💋 *Sexy / Flirty Desi*\n"
-            "• 💖 *Romantic / Love*\n"
-            "• 🎬 *Late Night / Cinematic*\n"
-            "• 👑 *Desi Traditional*\n\n"
+            "• 💋 *Sexy / Flirty Desi:* Bold candid selfies & sultry vibes\n"
+            "• 🔥 *Hot & Baddie / Attitude:* Sassy attitude & self-love\n"
+            "• 👯‍♀️ *Bestie Love / Duo Goals:* Cute bestie bonds & sisterhood\n"
+            "• 💖 *Romantic / Love:* Pastel sarees & heartwarming love lyrics\n"
+            "• 🎬 *Late Night / Cinematic:* Neon bokeh & late night thoughts\n"
+            "• 👑 *Desi Traditional:* Royal sarees & timeless shayari\n"
+            "• 💔 *Broken Heart / Dard:* Emotional heartbreak & soulful pain\n"
+            "• ✨ *Aesthetic / Soft Glow:* Golden hour & peaceful calm vibes\n\n"
             "_(💡 Visuals, text hooks & Bollywood songs will strictly adapt to your choice!)_"
         )
         await query.edit_message_text(

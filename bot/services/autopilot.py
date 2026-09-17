@@ -35,30 +35,86 @@ DEFAULT_ADMIN_CHAT_ID = 5381201341
 # Store pending auto-post tasks: post_id -> {chat_id, video_path, caption, target_time, status}
 PENDING_AUTO_POSTS: Dict[str, Dict[str, Any]] = {}
 
-# 3 Peak-time daily slots (Delivery 10 min before peak posting hour)
+# 8 Optimal Daily Viral Slots (Delivery 10 min before peak posting hour)
 DAILY_SLOTS = [
+    {
+        "name": "slot_aesthetic_morning",
+        "category": "aesthetic",
+        "title": "Aesthetic / Soft Glow",
+        "icon": "✨",
+        "delivery_time_str": "08:20 AM IST",
+        "target_post_time_str": "08:30 AM IST",
+        "hour": 8,
+        "minute": 20,
+    },
+    {
+        "name": "slot_bestie_morning",
+        "category": "bestie",
+        "title": "Bestie Love / Duo Goals",
+        "icon": "👯‍♀️",
+        "delivery_time_str": "10:50 AM IST",
+        "target_post_time_str": "11:00 AM IST",
+        "hour": 10,
+        "minute": 50,
+    },
     {
         "name": "slot_traditional_afternoon",
         "category": "traditional",
-        "delivery_time_str": "12:20 PM IST",
-        "target_post_time_str": "12:30 PM IST",
-        "hour": 12,
+        "title": "Desi Traditional",
+        "icon": "👑",
+        "delivery_time_str": "01:20 PM IST",
+        "target_post_time_str": "01:30 PM IST",
+        "hour": 13,
+        "minute": 20,
+    },
+    {
+        "name": "slot_broken_tea",
+        "category": "broken",
+        "title": "Broken Heart / Dard",
+        "icon": "💔",
+        "delivery_time_str": "04:20 PM IST",
+        "target_post_time_str": "04:30 PM IST",
+        "hour": 16,
         "minute": 20,
     },
     {
         "name": "slot_romantic_evening",
         "category": "romantic",
-        "delivery_time_str": "07:50 PM IST",
-        "target_post_time_str": "08:00 PM IST",
+        "title": "Romantic Love",
+        "icon": "💖",
+        "delivery_time_str": "07:20 PM IST",
+        "target_post_time_str": "07:30 PM IST",
         "hour": 19,
-        "minute": 50,
+        "minute": 20,
     },
     {
-        "name": "slot_night_owl",
-        "category": "sexy",  # rotates with cinematic
-        "delivery_time_str": "10:35 PM IST",
-        "target_post_time_str": "10:45 PM IST",
+        "name": "slot_baddie_night",
+        "category": "baddie",
+        "title": "Hot & Baddie / Attitude",
+        "icon": "🔥",
+        "delivery_time_str": "09:05 PM IST",
+        "target_post_time_str": "09:15 PM IST",
+        "hour": 21,
+        "minute": 5,
+    },
+    {
+        "name": "slot_sexy_latenight",
+        "category": "sexy",
+        "title": "Sexy / Flirty Desi",
+        "icon": "💋",
+        "delivery_time_str": "10:20 PM IST",
+        "target_post_time_str": "10:30 PM IST",
         "hour": 22,
+        "minute": 20,
+    },
+    {
+        "name": "slot_cinematic_midnight",
+        "category": "cinematic",
+        "title": "Late Night / Cinematic",
+        "icon": "🎬",
+        "delivery_time_str": "11:35 PM IST",
+        "target_post_time_str": "11:45 PM IST",
+        "hour": 23,
         "minute": 35,
     },
 ]
@@ -399,10 +455,15 @@ async def autopilot_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await set_autopilot_status(chat_id, True)
             await update.effective_message.reply_text(
                 "✅ *AutoPilot Mode Activated!*\n\n"
-                "The bot will automatically deliver ready reels 10 minutes before peak slots:\n\n"
-                "• 👑 *12:20 PM IST:* Desi Traditional (Auto-Post at 12:30 PM)\n"
-                "• 💖 *07:50 PM IST:* Romantic Love (Auto-Post at 08:00 PM)\n"
-                "• 🔥 *10:35 PM IST:* Sexy / Cinematic (Auto-Post at 10:45 PM)\n\n"
+                "The bot will automatically deliver ready reels 10 minutes before peak slots for ALL 8 categories:\n\n"
+                "1️⃣ ✨ *08:20 AM IST:* Aesthetic / Soft Glow (Post: 08:30 AM)\n"
+                "2️⃣ 👯‍♀️ *10:50 AM IST:* Bestie Love / Duo Goals (Post: 11:00 AM)\n"
+                "3️⃣ 👑 *01:20 PM IST:* Desi Traditional (Post: 01:30 PM)\n"
+                "4️⃣ 💔 *04:20 PM IST:* Broken Heart / Dard (Post: 04:30 PM)\n"
+                "5️⃣ 💖 *07:20 PM IST:* Romantic Love (Post: 07:30 PM)\n"
+                "6️⃣ 🔥 *09:05 PM IST:* Hot & Baddie / Attitude (Post: 09:15 PM)\n"
+                "7️⃣ 💋 *10:20 PM IST:* Sexy / Flirty Desi (Post: 10:30 PM)\n"
+                "8️⃣ 🎬 *11:35 PM IST:* Late Night / Cinematic (Post: 11:45 PM)\n\n"
                 "_(💡 If not cancelled within 10 minutes, the bot will auto-publish to Instagram!)_",
                 parse_mode="Markdown",
             )
@@ -439,15 +500,20 @@ async def autopilot_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     current_time_str = now_ist.strftime("%I:%M %p")
 
     msg = (
-        f"🤖 *AutoPilot Posting Schedule*\n\n"
+        f"🤖 *AutoPilot 8-Category Daily Posting Schedule*\n\n"
         f"• Status: *{status_icon}*\n"
         f"• Current Time: *{current_time_str} IST*\n"
         f"• Audio Policy: 🎵 *Pure Vocal Lyrics Only (No BGM / No Instrumental)*\n"
         f"• Fallback: ⏳ *10 Min Inactive -> Auto-Post to Instagram*\n\n"
-        "📅 *Daily 3-Slot Schedule:*\n"
-        "1️⃣ 👑 *Desi Traditional:* 12:20 PM (Auto-Post: 12:30 PM)\n"
-        "2️⃣ 💖 *Romantic Love:* 07:50 PM (Auto-Post: 08:00 PM)\n"
-        "3️⃣ 🔥 *Sexy / Cinematic:* 10:35 PM (Auto-Post: 10:45 PM)"
+        "📅 *Full Daily 8-Category Timetable:*\n"
+        "1️⃣ ✨ *Aesthetic / Soft:* 08:20 AM (Post: 08:30 AM)\n"
+        "2️⃣ 👯‍♀️ *Bestie Love:* 10:50 AM (Post: 11:00 AM)\n"
+        "3️⃣ 👑 *Desi Traditional:* 01:20 PM (Post: 01:30 PM)\n"
+        "4️⃣ 💔 *Broken Heart / Dard:* 04:20 PM (Post: 04:30 PM)\n"
+        "5️⃣ 💖 *Romantic Love:* 07:20 PM (Post: 07:30 PM)\n"
+        "6️⃣ 🔥 *Hot & Baddie:* 09:05 PM (Post: 09:15 PM)\n"
+        "7️⃣ 💋 *Sexy / Flirty Desi:* 10:20 PM (Post: 10:30 PM)\n"
+        "8️⃣ 🎬 *Late Night Cinematic:* 11:35 PM (Post: 11:45 PM)"
     )
 
     toggle_btn = (

@@ -24,9 +24,13 @@ async def reel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "🎬 *Reel Studio: Choose Your Category*\n\n"
         "Please select the vibe / category for your reel first:\n\n"
         "• 💋 *Sexy / Flirty Desi:* Bold candid selfies & sultry vibes\n"
+        "• 🔥 *Hot & Baddie / Attitude:* Sassy attitude & self-love\n"
+        "• 👯‍♀️ *Bestie Love / Duo Goals:* Cute bestie bonds & sisterhood\n"
         "• 💖 *Romantic / Love:* Pastel sarees & heartwarming love lyrics\n"
         "• 🎬 *Late Night / Cinematic:* Neon bokeh & late night thoughts\n"
-        "• 👑 *Desi Traditional:* Royal sarees & timeless shayari\n\n"
+        "• 👑 *Desi Traditional:* Royal sarees & timeless shayari\n"
+        "• 💔 *Broken Heart / Dard:* Emotional heartbreak & soulful pain\n"
+        "• ✨ *Aesthetic / Soft Glow:* Golden hour & peaceful calm vibes\n\n"
         "_(💡 Visuals, Bollywood songs & hooks will strictly adapt to your choice!)_"
     )
     if update.effective_message:
