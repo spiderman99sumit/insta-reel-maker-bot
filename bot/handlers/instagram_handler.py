@@ -9,7 +9,12 @@ from bot.services.instagram_service import instagram_service
 from bot.services.caption_generator import generate_instagram_caption
 from database.db import db_manager
 
+from typing import Dict, Any
+
 logger = logging.getLogger(__name__)
+
+# Cache pending 2FA login attempts: chat_id -> {username, password}
+PENDING_2FA: Dict[int, Dict[str, str]] = {}
 
 
 async def insta_login_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -60,9 +65,78 @@ async def insta_login_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         await status_msg.edit_text(success_text, parse_mode="Markdown")
     else:
+        if res.get("requires_2fa"):
+            PENDING_2FA[chat_id] = {"username": username, "password": password}
+            await status_msg.edit_text(
+                "🔐 *Two-Factor Authentication (2FA) Required!*\n\n"
+                "Instagram ne aapke phone / authenticator app par verification code bheja hai.\n\n"
+                "Code verify karne ke liye ye command run karein:\n"
+                "`/insta_2fa <code>`\n\n"
+                "_(Example: `/insta_2fa 123456`)_",
+                parse_mode="Markdown"
+            )
+            return
+
         err = res.get("error", "Unknown error occurred.")
         await status_msg.edit_text(
             f"❌ *Instagram Connection Failed:*\n\n{err}\n\nTry again with `/insta_login <username> <password>` or connect via session cookie with `/insta_session`.",
+            parse_mode="Markdown"
+        )
+
+
+async def insta_2fa_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /insta_2fa <code> to complete two-factor authentication."""
+    chat_id = update.effective_chat.id
+    msg = update.effective_message
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=msg.message_id)
+    except Exception:
+        pass
+
+    pending = PENDING_2FA.get(chat_id)
+    if not pending:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="❌ *No pending 2FA login found.*\nPlease run `/insta_login <username> <password>` first.",
+            parse_mode="Markdown"
+        )
+        return
+
+    args = context.args or []
+    if not args:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="ℹ️ *Usage:* `/insta_2fa <code>`\nExample: `/insta_2fa 123456`\nSend the 6-digit verification code sent to your phone or authenticator app.",
+            parse_mode="Markdown"
+        )
+        return
+
+    code = args[0].strip()
+    status_msg = await context.bot.send_message(
+        chat_id=chat_id,
+        text="⏳ *Verifying 2FA code with Instagram...*",
+        parse_mode="Markdown"
+    )
+
+    res = await instagram_service.login_user(
+        chat_id=chat_id,
+        username=pending["username"],
+        password=pending["password"],
+        verification_code=code,
+    )
+
+    if res.get("success"):
+        PENDING_2FA.pop(chat_id, None)
+        await status_msg.edit_text(
+            f"✅ *Successfully Connected to Instagram!*\n\n"
+            f"👤 **Account:** @{pending['username']}\n"
+            f"✨ **Full Name:** {res.get('full_name', '')}\n\n"
+            "Auto-posting is now fully active for this account! 🚀",
+            parse_mode="Markdown"
+        )
+    else:
+        await status_msg.edit_text(
+            f"❌ *2FA Verification Failed:*\n\n{res.get('error', 'Invalid code')}\n\nTry sending the code again: `/insta_2fa <code>`",
             parse_mode="Markdown"
         )
 
