@@ -263,6 +263,27 @@ class DatabaseManager:
             )
             await db.commit()
 
+    async def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """Retrieve arbitrary setting from bot_settings."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("CREATE TABLE IF NOT EXISTS bot_settings (key TEXT PRIMARY KEY, value TEXT);")
+            async with db.execute("SELECT value FROM bot_settings WHERE key = ?", (key,)) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    return row[0]
+                return default
+
+    async def set_setting(self, key: str, value: str) -> None:
+        """Store arbitrary setting into bot_settings."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("CREATE TABLE IF NOT EXISTS bot_settings (key TEXT PRIMARY KEY, value TEXT);")
+            await db.execute(
+                "INSERT INTO bot_settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = ?;",
+                (key, value, value),
+            )
+            await db.commit()
+
 
 # Singleton instance
 db_manager = DatabaseManager(config.database_path)

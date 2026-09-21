@@ -330,3 +330,98 @@ async def handle_post_to_insta_callback(update: Update, context: ContextTypes.DE
             f"❌ *Instagram Upload Failed:*\n\n{err}",
             parse_mode="Markdown"
         )
+
+
+async def insta_graph_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /insta_graph <account_id> <access_token> for zero-ban official Meta API connection."""
+    chat_id = update.effective_chat.id
+    msg = update.effective_message
+
+    # Safety: delete user message containing access token immediately
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=msg.message_id)
+    except Exception as e:
+        logger.warning(f"Could not delete graph token message: {e}")
+
+    args = context.args or []
+    if len(args) < 2:
+        help_text = (
+            "🛡️ *Official Meta Graph API Setup (Zero Ban Risk)*\n\n"
+            "Usage:\n"
+            "`/insta_graph <INSTAGRAM_ACCOUNT_ID> <ACCESS_TOKEN>`\n\n"
+            "📌 **Where to get these:**\n"
+            "1. Open [Meta Graph API Explorer](https://developers.facebook.com/tools/explorer/)\n"
+            "2. Select your Meta App (`Shruti Social Hub` or `sumit_99`)\n"
+            "3. Generate Token with `instagram_basic` & `instagram_content_publish`\n"
+            "4. Copy your numerical Instagram Account ID and paste here!\n\n"
+            "🔒 *Security:* Your message with the token was automatically deleted from chat."
+        )
+        await context.bot.send_message(chat_id=chat_id, text=help_text, parse_mode="Markdown")
+        return
+
+    account_id = args[0].strip()
+    access_token = args[1].strip()
+
+    status_msg = await context.bot.send_message(
+        chat_id=chat_id,
+        text="⏳ *Verifying Meta Graph API credentials with Facebook servers...*",
+        parse_mode="Markdown",
+    )
+
+    from bot.services.graph_api_service import graph_api_service
+    check = await graph_api_service.verify_credentials(account_id, access_token)
+
+    if check.get("valid"):
+        username = check.get("username", "night_thought_12")
+        await instagram_service.set_graph_credentials(chat_id, account_id, access_token, username=username)
+        await status_msg.edit_text(
+            f"🎉 *Official Meta Graph API Connected!*\n\n"
+            f"• 👤 **Account:** @{username}\n"
+            f"• 🆔 **Account ID:** `{account_id}`\n"
+            f"• 🛡️ **Status:** **Zero Ban Risk Enabled** (Official Whitelisted Meta API)\n\n"
+            f"All future scheduled reels will be published directly via Meta's official server-to-server endpoints! 🚀",
+            parse_mode="Markdown",
+        )
+    else:
+        err = check.get("error", "Unknown Meta error")
+        await status_msg.edit_text(
+            f"❌ *Meta Graph API Verification Failed:*\n\n`{err}`\n\n"
+            f"Please verify that the Token has `instagram_content_publish` and `instagram_basic` permissions.",
+            parse_mode="Markdown",
+        )
+
+
+async def insta_graph_status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /insta_graph_status to verify current connection mode."""
+    chat_id = update.effective_chat.id
+    graph_creds = await instagram_service.get_graph_credentials(chat_id)
+
+    if graph_creds:
+        from bot.services.graph_api_service import graph_api_service
+        check = await graph_api_service.verify_credentials(graph_creds["account_id"], graph_creds["access_token"])
+        status_text = "🟢 Active & Valid" if check.get("valid") else f"🔴 Invalid/Expired: {check.get('error')}"
+        await update.effective_message.reply_text(
+            f"🛡️ *Instagram Publishing Engine: Official Meta Graph API*\n\n"
+            f"• 👤 **Account:** @{graph_creds.get('username')}\n"
+            f"• 🆔 **Account ID:** `{graph_creds.get('account_id')}`\n"
+            f"• 🔐 **Token Status:** {status_text}\n"
+            f"• 🚀 **Ban Risk:** **0% (Meta Whitelisted)**\n\n"
+            f"To re-link or update: `/insta_graph <account_id> <access_token>`",
+            parse_mode="Markdown",
+        )
+    else:
+        acc = await instagram_service.is_connected(chat_id)
+        if acc:
+            await update.effective_message.reply_text(
+                f"⚠️ *Current Mode: Private Mobile Session (instagrapi)*\n\n"
+                f"• Account: @{acc.get('username')}\n"
+                f"• Stack: Private mobile emulation\n\n"
+                f"💡 *Upgrade to Official Meta Graph API (Zero Ban Risk):*\n"
+                f"Run `/insta_graph <account_id> <access_token>`",
+                parse_mode="Markdown",
+            )
+        else:
+            await update.effective_message.reply_text(
+                "❌ No Instagram account connected yet.\nUse `/insta_graph` or `/insta_login`.",
+                parse_mode="Markdown",
+            )

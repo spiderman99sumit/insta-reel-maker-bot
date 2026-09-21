@@ -169,8 +169,44 @@ class InstagramService:
             logger.warning(f"Could not load Instagram session for {chat_id}: {e}")
             return None
 
+    async def get_graph_credentials(self, chat_id: int) -> Optional[Dict[str, str]]:
+        """Check for official Graph API account ID and access token."""
+        import os
+        # 1. User-specific DB credentials
+        acct_id = await db_manager.get_setting(f"graph_account_{chat_id}")
+        token = await db_manager.get_setting(f"graph_token_{chat_id}")
+        username = await db_manager.get_setting(f"graph_user_{chat_id}")
+
+        # 2. Global DB or environment variables fallback
+        if not (acct_id and token):
+            acct_id = await db_manager.get_setting("graph_account_id") or os.environ.get("INSTAGRAM_GRAPH_ACCOUNT_ID")
+            token = await db_manager.get_setting("graph_access_token") or os.environ.get("INSTAGRAM_GRAPH_ACCESS_TOKEN")
+            username = await db_manager.get_setting("graph_username") or os.environ.get("INSTAGRAM_GRAPH_USERNAME", "night_thought_12")
+
+        if acct_id and token:
+            return {
+                "account_id": acct_id.strip(),
+                "access_token": token.strip(),
+                "username": username or "night_thought_12",
+            }
+        return None
+
+    async def set_graph_credentials(self, chat_id: int, account_id: str, access_token: str, username: Optional[str] = None) -> None:
+        """Store official Graph API credentials."""
+        await db_manager.set_setting(f"graph_account_{chat_id}", account_id.strip())
+        await db_manager.set_setting(f"graph_token_{chat_id}", access_token.strip())
+        if username:
+            await db_manager.set_setting(f"graph_user_{chat_id}", username.strip())
+
     async def is_connected(self, chat_id: int) -> Optional[Dict[str, Any]]:
-        """Check if an active Instagram account is linked."""
+        """Check if an active Instagram account is linked (Graph API or instagrapi)."""
+        graph_creds = await self.get_graph_credentials(chat_id)
+        if graph_creds:
+            return {
+                "username": graph_creds.get("username", "night_thought_12"),
+                "account_id": graph_creds.get("account_id"),
+                "type": "meta_graph_api",
+            }
         return await db_manager.get_instagram_account(chat_id)
 
     async def set_autopost(self, chat_id: int, enabled: bool) -> bool:
@@ -183,6 +219,9 @@ class InstagramService:
 
     async def logout(self, chat_id: int) -> bool:
         """Disconnect Instagram account and delete stored session file."""
+        # Clear Graph credentials
+        await db_manager.set_setting(f"graph_account_{chat_id}", "")
+        await db_manager.set_setting(f"graph_token_{chat_id}", "")
         session_path = self._get_session_path(chat_id)
         if session_path.exists():
             try:
@@ -199,15 +238,31 @@ class InstagramService:
         caption: str = ""
     ) -> Dict[str, Any]:
         """Upload a 1080x1920 MP4 reel directly to user's Instagram feed/reels."""
+        if not video_path.exists():
+            return {"success": False, "error": f"Video file not found: {video_path}"}
+
+        # 1. First priority: Official Meta Graph API (Zero Ban Risk)
+        from bot.services.graph_api_service import graph_api_service
+        graph_creds = await self.get_graph_credentials(chat_id)
+        if graph_creds:
+            logger.info(f"[InstagramService] Publishing via official Meta Graph API (Account: {graph_creds['account_id']})")
+            graph_res = await graph_api_service.publish_reel(
+                video_path=video_path,
+                caption=caption,
+                account_id=graph_creds["account_id"],
+                access_token=graph_creds["access_token"],
+            )
+            if graph_res.get("success"):
+                return graph_res
+            logger.warning(f"[InstagramService] Meta Graph API returned error: {graph_res.get('error')}. Falling back to instagrapi...")
+
+        # 2. Second priority: Fallback to instagrapi session
         cl = await self.get_authenticated_client(chat_id)
         if not cl:
             return {
                 "success": False,
-                "error": "Instagram account not connected. Use `/insta_login username password` first."
+                "error": "Instagram account not connected. Use `/insta_graph account_id access_token` or `/insta_login`."
             }
-
-        if not video_path.exists():
-            return {"success": False, "error": f"Video file not found: {video_path}"}
 
         # Generate custom thumbnail at 2.0s using FFmpeg to avoid MoviePy thumbnailer
         thumb_path = video_path.with_suffix(".thumb.jpg")

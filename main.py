@@ -55,6 +55,8 @@ from bot.handlers.instagram_handler import (
     insta_autopost_command,
     insta_logout_command,
     handle_post_to_insta_callback,
+    insta_graph_command,
+    insta_graph_status_command,
 )
 from bot.utils.cleanup import cleanup_expired_outputs
 from bot.utils.config import config, mask_token
@@ -181,6 +183,8 @@ async def setup_bot() -> Application:
     app.add_handler(CommandHandler("insta_status", insta_status_command))
     app.add_handler(CommandHandler("insta_autopost", insta_autopost_command))
     app.add_handler(CommandHandler("insta_logout", insta_logout_command))
+    app.add_handler(CommandHandler("insta_graph", insta_graph_command))
+    app.add_handler(CommandHandler("insta_graph_status", insta_graph_status_command))
 
     # Register Global Error Handler
     app.add_error_handler(global_error_handler)
@@ -223,6 +227,33 @@ def start_health_server() -> None:
                 except Exception as e:
                     self.wfile.write(f"Error reading bot.log: {e}".encode("utf-8"))
                 return
+            if self.path.startswith("/media/"):
+                import shutil
+                from bot.utils.config import config
+                raw_filename = self.path[len("/media/"):].split("?")[0].strip()
+                safe_name = os.path.basename(raw_filename)
+                target_file = config.output_dir / safe_name
+                if not target_file.exists():
+                    target_file = config.temp_dir / safe_name
+                if target_file.exists() and target_file.is_file():
+                    try:
+                        file_size = target_file.stat().st_size
+                        self.send_response(200)
+                        self.send_header("Content-Type", "video/mp4")
+                        self.send_header("Content-Length", str(file_size))
+                        self.send_header("Accept-Ranges", "bytes")
+                        self.end_headers()
+                        with open(target_file, "rb") as f:
+                            shutil.copyfileobj(f, self.wfile)
+                        return
+                    except Exception as e:
+                        logger.warning(f"Error streaming media {safe_name}: {e}")
+                        return
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"Media Not Found")
+                return
+
             self.send_response(200)
             self.send_header("Content-Type", "text/plain")
             self.end_headers()
