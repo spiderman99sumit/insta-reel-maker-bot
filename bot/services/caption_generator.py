@@ -5,25 +5,25 @@ from typing import List, Optional
 
 # High-CTR CTAs tailored for flirty, aesthetic & viral reels
 CTAS: List[str] = [
-    "Drop a '??' if you agree...",
-    "Save this for late night vibes ????",
-    "Tag your 2 AM person ??",
-    "Double tap if this hit home ???",
-    "Share with someone who needs to see this ??",
-    "Comment your mood in one emoji ?",
-    "Rehne do cutie, sach bolna allowed nahi hai ????",
-    "Don't forget to save this ??",
+    "Drop a '🖤' if you agree...",
+    "Save this for late night vibes 🌙✨",
+    "Tag your 2 AM person 🥀",
+    "Double tap if this hit home ❤️‍🩹",
+    "Share with someone who needs to see this 💬",
+    "Comment your mood in one emoji 🌚",
+    "Rehne do cutie, sach bolna allowed nahi hai 🤫",
+    "Don't forget to save this 📌",
 ]
 
 # Naughty / flirty contextual teasers
 TEASERS: List[str] = [
-    "Some thoughts are just better left unspoken... or maybe not ????",
-    "Sarafat ka zamana gaya, late night vibes only ?",
-    "If you know, you know ??",
-    "Main kuch nahi bol rahi, bas aankhein bol rahi hain ??",
-    "2 AM rules are always unwritten ??",
-    "Ek glance hi kafi tha hosh udane ke liye ??",
-    "Don't blame me, blame the vibe ???",
+    "Some thoughts are just better left unspoken... or maybe not 🥀🖤",
+    "Sharafat ka zamana gaya, late night vibes only 🌙",
+    "If you know, you know 🤫",
+    "Main kuch nahi bol rahi, bas aankhein bol rahi hain ✨",
+    "2 AM rules are always unwritten 🥀",
+    "Ek glance hi kafi tha hosh udane ke liye 💋",
+    "Don't blame me, blame the vibe 🌙✨",
 ]
 
 # Curated high-reach hashtags for explore page algorithms

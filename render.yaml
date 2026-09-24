@@ -1,4 +1,4 @@
-﻿services:
+services:
   - type: web
     name: insta-reel-maker-bot
     env: docker
@@ -16,6 +16,6 @@
       - key: GEMINI_API_KEY
         sync: false
       - key: OUTPUT_DURATION_SECONDS
-        value: "15"
+        value: "7"
       - key: MAX_VIDEO_SIZE_MB
         value: "100"
