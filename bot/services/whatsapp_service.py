@@ -3,10 +3,11 @@
 Sends instant WhatsApp alerts when a scheduled reel is rendered and ready.
 """
 
+import asyncio
 import logging
 import os
 from typing import Any, Dict, Optional
-import httpx
+import requests
 
 from database.db import db_manager
 
@@ -84,15 +85,17 @@ class WhatsAppService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.post(url, json=payload)
-                data = res.json()
-                if res.status_code == 200 and "idMessage" in data:
-                    logger.info(f"[WhatsAppService] Alert sent to WhatsApp ({phone}): {data.get('idMessage')}")
-                    return {"success": True, "idMessage": data.get("idMessage")}
-                else:
-                    logger.warning(f"[WhatsAppService] Green-API returned error: {data}")
-                    return {"success": False, "error": data}
+            def _post():
+                return requests.post(url, json=payload, timeout=10.0)
+
+            res = await asyncio.to_thread(_post)
+            data = res.json()
+            if res.status_code == 200 and "idMessage" in data:
+                logger.info(f"[WhatsAppService] Alert sent to WhatsApp ({phone}): {data.get('idMessage')}")
+                return {"success": True, "idMessage": data.get("idMessage")}
+            else:
+                logger.warning(f"[WhatsAppService] Green-API returned error: {data}")
+                return {"success": False, "error": data}
         except Exception as e:
             logger.error(f"[WhatsAppService] Failed to send WhatsApp alert: {e}")
             return {"success": False, "error": str(e)}
