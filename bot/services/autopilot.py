@@ -349,18 +349,16 @@ async def generate_and_deliver_scheduled_reel(
             )
         logger.info(f"[AutoPilot] Delivered scheduled reel {post_id} to chat {chat_id}")
 
-        # Trigger WhatsApp Instant Alert (Non-blocking)
+        # Trigger WhatsApp Instant Alert
         try:
             from bot.services.whatsapp_service import whatsapp_service
-            asyncio.create_task(
-                whatsapp_service.send_reel_ready_alert(
-                    category_title=cat_info["title"],
-                    category_icon=cat_info["icon"],
-                    photo_name=image_path.name,
-                    song_title=song_title,
-                    hook_text=hook_text,
-                    target_time_str=target_time_str,
-                )
+            await whatsapp_service.send_reel_ready_alert(
+                category_title=cat_info["title"],
+                category_icon=cat_info["icon"],
+                photo_name=image_path.name,
+                song_title=song_title,
+                hook_text=hook_text,
+                target_time_str=target_time_str,
             )
         except Exception as we:
             logger.warning(f"[AutoPilot] WhatsApp alert dispatch error: {we}")
